@@ -4,6 +4,7 @@ import Gamelogo from "../Images/GameLogo.png";
 import { Link } from "react-router-dom";
 import { CircleUser, CornerUpRight, ThumbsDown, ThumbsUp } from "lucide-react";
 import TicTacToeShift from "./TicTacToeShift";
+import GameLauncher from "./GameLauncher";
 // import CarromGame from "./CarromGame";
 
 const Header = () => {
@@ -142,7 +143,7 @@ const Header = () => {
           <div className="w-[85vw] min-h-[80vh] mx-auto rounded-xl border-[1px]  relative overflow-hidden mb-10">
             <div className="bg-gray-200 bg-opacity-30 backdrop-filter backdrop-blur-lg absolute inset-0"></div>
             <div className="relative z-10 p-8">
-              <TicTacToeShift />
+              <GameLauncher />
               {/* <CarromGame/> */} 
             </div>
           </div>
