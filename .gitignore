@@ -1,0 +1,135 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+
+
+
+Structure of files
+
+gd-game/
+public/
+index.html
+src/
+components/
+GameContainer.js
+Level.js
+Obstacle.js
+Player.js
+GameLogic.js
+AudioManager.js
+App.js
+index.css
+main.js
+vite.config.js
+package.json
+
+
+
+
+
+
+
+
+
+<Link to="/Bounce-Back">
+                <button className="Btn-Container relative left-[35vw] top-[60vh] hover:bg-lime-500">
+                  <span className="text font-semibold">Play Now!</span>
+                  <span className="icon-Container">
+                    <svg
+                      width="16"
+                      height="19"
+                      viewBox="0 0 16 19"
+                      fill="nones"
+                    >
+                      <circle
+                        cx="1.61321"
+                        cy="1.61321"
+                        r="1.5"
+                        fill="black"
+                      ></circle>
+                      <circle
+                        cx="5.73583"
+                        cy="1.61321"
+                        r="1.5"
+                        fill="black"
+                      ></circle>
+                      <circle
+                        cx="5.73583"
+                        cy="5.5566"
+                        r="1.5"
+                        fill="black"
+                      ></circle>
+                      <circle
+                        cx="9.85851"
+                        cy="5.5566"
+                        r="1.5"
+                        fill="black"
+                      ></circle>
+                      <circle
+                        cx="9.85851"
+                        cy="9.5"
+                        r="1.5"
+                        fill="black"
+                      ></circle>
+                      <circle
+                        cx="13.9811"
+                        cy="9.5"
+                        r="1.5"
+                        fill="black"
+                      ></circle>
+                      <circle
+                        cx="5.73583"
+                        cy="13.4434"
+                        r="1.5"
+                        fill="black"
+                      ></circle>
+                      <circle
+                        cx="9.85851"
+                        cy="13.4434"
+                        r="1.5"
+                        fill="black"
+                      ></circle>
+                      <circle
+                        cx="1.61321"
+                        cy="17.3868"
+                        r="1.5"
+                        fill="black"
+                      ></circle>
+                      <circle
+                        cx="5.73583"
+                        cy="17.3868"
+                        r="1.5"
+                        fill="black"
+                      ></circle>
+                    </svg>
+                  </span>
+                </button>
+              </Link>
+
+
+
+
+
+              TicTacToeShift
