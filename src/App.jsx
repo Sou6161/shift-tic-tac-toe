@@ -11,7 +11,7 @@ const App = () => {
       // console.log("Scrolled", scroll);
     });
   
-    // Rest of your component code hello i am shourabh sain
+    // Rest of your component code hello i am surabh sain
   }
   SomeComponent()
   
