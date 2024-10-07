@@ -1,14 +1,32 @@
 import React, { useState } from "react";
 import TicTacToeShift from "./TicTacToeShift";
+import MultiplayerLobby from "./MultiplayerLobby";
 
 const GameLauncher = () => {
   const [gameStarted, setGameStarted] = useState(false);
   const [gameMode, setGameMode] = useState(null);
+  const [socket, setSocket] = useState(null);
+  const [isHost, setIsHost] = useState(false);
 
-  if (gameStarted && gameMode) {
+  const handleMultiplayerStart = (socketInstance, hostStatus) => {
+    setSocket(socketInstance);
+    setIsHost(hostStatus);
+    setGameStarted(true);
+  };
+
+  if (gameStarted && gameMode === 'multiplayer') {
+    return <TicTacToeShift gameMode={gameMode} socket={socket} isHost={isHost} />;
+  }
+
+  if (gameStarted && gameMode === 'singleplayer') {
     return <TicTacToeShift gameMode={gameMode} />;
   }
 
+  if (gameMode === 'multiplayer' && !gameStarted) {
+    return <MultiplayerLobby onGameStart={handleMultiplayerStart} />;
+  }
+
+  
   return (
     <div className="min-h-screen bg-gradient-to-r rounded-xl from-teal-500 via-slate-500 to-rose-500 flex items-center justify-center p-4">
       <div className="bg-white bg-opacity-30 backdrop-blur-lg rounded-3xl p-8 w-full max-w-2xl shadow-xl">
@@ -34,7 +52,7 @@ const GameLauncher = () => {
                   onClick={() => setGameMode("multiplayer")}
                   className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300 ease-in-out transform hover:scale-105"
                 >
-                  Multiplayer (with Friends)
+                  Multiplayer (with Friend)
                 </button>
               </div>
             ) : (

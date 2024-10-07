@@ -4,7 +4,9 @@ import Board from "./Boards";
 import GameInfo from "./GameInfo";
 import { getBestMove } from './AI';
 
-const TicTacToeShift = ({ gameMode }) => {
+
+
+const TicTacToeShift = ({ gameMode, socket, isHost }) => {
   const [board, setBoard] = useState(Array(9).fill(null));
   const [currentPlayer, setCurrentPlayer] = useState("X");
   const [winner, setWinner] = useState(null);
@@ -12,13 +14,66 @@ const TicTacToeShift = ({ gameMode }) => {
   const [movesO, setMovesO] = useState(0);
   const [isAIThinking, setIsAIThinking] = useState(false);
   const [timeLeft, setTimeLeft] = useState(30);
+  const [gameId, setGameId] = useState(null);
+  const [opponentDisconnected, setOpponentDisconnected] = useState(false);
+  
   const isAIGame = gameMode === 'singleplayer';
+  const isMultiplayerGame = gameMode === 'multiplayer';
+  
+  // Player assignment for multiplayer
+  const playerSymbol = isHost ? "X" : "O";
+  const isPlayerTurn = currentPlayer === playerSymbol;
 
-  const handleMove = (index) => {
-    if (board[index] || winner || isAIThinking) return;
+  useEffect(() => {
+    if (isMultiplayerGame && socket) {
+      socket.on('opponentMove', ({ index }) => {
+        makeMove(index, true);
+      });
+
+      socket.on('opponentShift', ({ from, to }) => {
+        makeShift(from, to, true);
+      });
+
+      socket.on('playerDisconnected', () => {
+        setOpponentDisconnected(true);
+      });
+
+      return () => {
+        socket.off('opponentMove');
+        socket.off('opponentShift');
+        socket.off('playerDisconnected');
+      };
+    }
+  }, [socket, isMultiplayerGame]);
+
+  const isValidMove = (index, isOpponentMove = false) => {
+    if (board[index] || winner || isAIThinking) return false;
     
     const isPlacementPhase = movesX < 3 || movesO < 3;
-    if (!isPlacementPhase) return;
+    if (!isPlacementPhase) return false;
+
+    if (isMultiplayerGame && !isOpponentMove) {
+      return isPlayerTurn;
+    }
+
+    return true;
+  };
+
+  const isValidShift = (from, to, isOpponentShift = false) => {
+    if (board[from] !== currentPlayer || board[to] !== null || winner || isAIThinking) return false;
+    
+    const isPlacementPhase = movesX < 3 || movesO < 3;
+    if (isPlacementPhase) return false;
+
+    if (isMultiplayerGame && !isOpponentShift) {
+      return isPlayerTurn;
+    }
+
+    return true;
+  };
+
+  const makeMove = (index, isOpponentMove = false) => {
+    if (!isValidMove(index, isOpponentMove)) return;
 
     const newBoard = [...board];
     newBoard[index] = currentPlayer;
@@ -34,15 +89,12 @@ const TicTacToeShift = ({ gameMode }) => {
       setWinner(currentPlayer);
     } else {
       setCurrentPlayer(currentPlayer === "X" ? "O" : "X");
-      setTimeLeft(30); // Reset timer for next player
+      setTimeLeft(30);
     }
   };
 
-  const handleShift = (from, to) => {
-    if (board[from] !== currentPlayer || board[to] !== null || winner || isAIThinking) return;
-    
-    const isPlacementPhase = movesX < 3 || movesO < 3;
-    if (isPlacementPhase) return;
+  const makeShift = (from, to, isOpponentShift = false) => {
+    if (!isValidShift(from, to, isOpponentShift)) return;
 
     const newBoard = [...board];
     newBoard[to] = currentPlayer;
@@ -53,8 +105,24 @@ const TicTacToeShift = ({ gameMode }) => {
       setWinner(currentPlayer);
     } else {
       setCurrentPlayer(currentPlayer === "X" ? "O" : "X");
-      setTimeLeft(30); // Reset timer for next player
+      setTimeLeft(30);
     }
+  };
+
+  const handleMove = (index) => {
+    if (isMultiplayerGame) {
+      if (!isPlayerTurn) return;
+      socket.emit('move', { index, gameId });
+    }
+    makeMove(index);
+  };
+
+  const handleShift = (from, to) => {
+    if (isMultiplayerGame) {
+      if (!isPlayerTurn) return;
+      socket.emit('shift', { from, to, gameId });
+    }
+    makeShift(from, to);
   };
 
   const checkWinner = (board, player) => {
@@ -77,6 +145,7 @@ const TicTacToeShift = ({ gameMode }) => {
     setMovesO(0);
     setIsAIThinking(false);
     setTimeLeft(30);
+    setOpponentDisconnected(false);
   };
 
   // AI Move Effect
@@ -90,9 +159,9 @@ const TicTacToeShift = ({ gameMode }) => {
         
         if (bestMove) {
           if (isPlacementPhase) {
-            handleMove(bestMove.to);
+            makeMove(bestMove.to);
           } else {
-            handleShift(bestMove.from, bestMove.to);
+            makeShift(bestMove.from, bestMove.to);
           }
         }
         setIsAIThinking(false);
@@ -100,11 +169,11 @@ const TicTacToeShift = ({ gameMode }) => {
 
       return () => clearTimeout(aiMoveTimeout);
     }
-  }, [currentPlayer, winner, board, movesO]);
+  }, [currentPlayer, winner, board, movesO, isAIGame]);
 
   // Timer Effect
   useEffect(() => {
-    if (winner || isAIThinking) return;
+    if (winner || isAIThinking || (isMultiplayerGame && !isPlayerTurn)) return;
 
     const timer = setInterval(() => {
       if (timeLeft > 0) {
@@ -117,13 +186,18 @@ const TicTacToeShift = ({ gameMode }) => {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [timeLeft, currentPlayer, winner, isAIThinking]);
+  }, [timeLeft, currentPlayer, winner, isAIThinking, isMultiplayerGame, isPlayerTurn]);
 
   const canShift = movesX >= 3 && movesO >= 3;
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-r from-teal-500 via-slate-500 to-rose-500 p-4">
       <h1 className="text-4xl font-bold mb-8 text-white">Tic-Tac-Toe Shift</h1>
+      {opponentDisconnected && (
+        <div className="bg-red-500 text-white p-4 rounded-lg mb-4">
+          Opponent disconnected. Please return to the lobby.
+        </div>
+      )}
       <div className="bg-white bg-opacity-20 backdrop-blur-lg rounded-xl p-8 shadow-xl">
         <Board
           board={board}
@@ -131,7 +205,7 @@ const TicTacToeShift = ({ gameMode }) => {
           onShift={handleShift}
           canShift={canShift}
           currentPlayer={currentPlayer}
-          disabled={isAIThinking}
+          disabled={isAIThinking || (isMultiplayerGame && !isPlayerTurn)}
         />
         <GameInfo
           currentPlayer={currentPlayer}
@@ -142,6 +216,8 @@ const TicTacToeShift = ({ gameMode }) => {
           isAIThinking={isAIThinking}
           gameMode={gameMode}
           timeLeft={timeLeft}
+          playerSymbol={playerSymbol}
+          isPlayerTurn={isPlayerTurn}
         />
       </div>
     </div>

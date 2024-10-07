@@ -1,6 +1,4 @@
 // GameInfo.jsx
-import React from 'react';
-
 const GameInfo = ({ 
   currentPlayer, 
   winner, 
@@ -9,22 +7,36 @@ const GameInfo = ({
   movesO, 
   isAIThinking, 
   gameMode,
-  timeLeft
+  timeLeft,
+  playerSymbol,
+  isPlayerTurn
 }) => {
   const isShiftingPhase = movesX >= 3 && movesO >= 3;
+
+  const getPlayerDisplay = () => {
+    if (gameMode === 'multiplayer') {
+      return isPlayerTurn ? "Your turn" : "Opponent's turn";
+    } else {
+      return `Current Player: ${currentPlayer === 'O' && gameMode === 'singleplayer' ? 'AI' : currentPlayer}`;
+    }
+  };
 
   return (
     <div className="text-center text-white mt-6">
       {winner ? (
         <h2 className="text-2xl font-semibold mb-4">
-          {gameMode === 'singleplayer' && winner === 'O' ? 'AI' : `Player ${winner}`} wins!
+          {gameMode === 'singleplayer' && winner === 'O' ? 'AI' : 
+           gameMode === 'multiplayer' ? (winner === playerSymbol ? 'You' : 'Opponent') :
+           `Player ${winner}`} wins!
         </h2>
       ) : (
         <div>
           <h2 className="text-2xl font-semibold mb-4">
-            {isAIThinking ? 'AI is thinking...' : 
-              `Current Player: ${currentPlayer === 'O' && gameMode === 'singleplayer' ? 'AI' : currentPlayer}`}
+            {isAIThinking ? 'AI is thinking...' : getPlayerDisplay()}
           </h2>
+          {gameMode === 'multiplayer' && (
+            <p className="text-xl mb-2">You are Player {playerSymbol}</p>
+          )}
           <p className="text-xl mb-2">Time Left: {timeLeft}s</p>
           {!isShiftingPhase && (
             <p className="text-lg mb-4">
