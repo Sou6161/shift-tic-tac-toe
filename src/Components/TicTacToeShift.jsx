@@ -1,4 +1,3 @@
-// TicTacToeShift.jsx
 import React, { useState, useEffect } from "react";
 import Board from "./Boards";
 import GameInfo from "./GameInfo";
@@ -12,76 +11,62 @@ const TicTacToeShift = ({ gameMode, socket, isHost }) => {
   const [movesO, setMovesO] = useState(0);
   const [isAIThinking, setIsAIThinking] = useState(false);
   const [timeLeft, setTimeLeft] = useState(30);
-  const [gameId, setGameId] = useState(null);
   const [opponentDisconnected, setOpponentDisconnected] = useState(false);
 
   const isAIGame = gameMode === "singleplayer";
   const isMultiplayerGame = gameMode === "multiplayer";
 
-  // Player assignment for multiplayer
   const playerSymbol = isHost ? "X" : "O";
-  const isPlayerTurn = currentPlayer === playerSymbol;
+  const isPlayerTurn = isMultiplayerGame
+    ? currentPlayer === playerSymbol
+    : true;
 
   useEffect(() => {
     if (isMultiplayerGame && socket) {
       socket.on("opponentMove", ({ index }) => {
         makeMove(index, true);
-        setCurrentPlayer(playerSymbol); // Switch turn back to player
-        setTimeLeft(30); // Reset timer
       });
 
       socket.on("opponentShift", ({ from, to }) => {
         makeShift(from, to, true);
-        setCurrentPlayer(playerSymbol); // Switch turn back to player
-        setTimeLeft(30); // Reset timer
       });
 
       socket.on("playerDisconnected", () => {
         setOpponentDisconnected(true);
       });
 
-      socket.on("gameStarted", () => {
-        resetGame();
+      socket.on("nextTurn", () => {
+        setCurrentPlayer((prev) => (prev === "X" ? "O" : "X"));
+        setTimeLeft(30);
       });
 
       return () => {
         socket.off("opponentMove");
         socket.off("opponentShift");
         socket.off("playerDisconnected");
-        socket.off("gameStarted");
+        socket.off("nextTurn");
       };
     }
   }, [socket, isMultiplayerGame]);
 
   const isValidMove = (index, isOpponentMove = false) => {
-    if (board[index] || winner || isAIThinking) return false;
-
+    if (board[index] || winner) return false;
     const isPlacementPhase = movesX < 3 || movesO < 3;
     if (!isPlacementPhase) return false;
-
     if (isMultiplayerGame && !isOpponentMove) {
       return isPlayerTurn;
     }
-
     return true;
   };
 
   const isValidShift = (from, to, isOpponentShift = false) => {
-    if (
-      board[from] !== currentPlayer ||
-      board[to] !== null ||
-      winner ||
-      isAIThinking
-    )
+    if (board[from] !== currentPlayer || board[to] !== null || winner)
       return false;
-
     const isPlacementPhase = movesX < 3 || movesO < 3;
     if (isPlacementPhase) return false;
-
     if (isMultiplayerGame && !isOpponentShift) {
       return isPlayerTurn;
     }
-
     return true;
   };
 
@@ -100,13 +85,9 @@ const TicTacToeShift = ({ gameMode, socket, isHost }) => {
 
     if (checkWinner(newBoard, currentPlayer)) {
       setWinner(currentPlayer);
-    } else {
-      setCurrentPlayer(currentPlayer === "X" ? "O" : "X");
-      setTimeLeft(30);
-    }
-
-    if (isMultiplayerGame && !isOpponentMove) {
-      socket.emit("move", { index, gameId });
+    } else if (!isOpponentMove && isMultiplayerGame) {
+      socket.emit("move", { index, gameId: socket.gameId });
+      socket.emit("nextTurn", { gameId: socket.gameId });
     }
   };
 
@@ -120,22 +101,15 @@ const TicTacToeShift = ({ gameMode, socket, isHost }) => {
 
     if (checkWinner(newBoard, currentPlayer)) {
       setWinner(currentPlayer);
-    } else {
-      setCurrentPlayer(currentPlayer === "X" ? "O" : "X");
-      setTimeLeft(30);
-    }
-
-    if (isMultiplayerGame && !isOpponentShift) {
-      socket.emit("shift", { from, to, gameId });
+    } else if (!isOpponentShift && isMultiplayerGame) {
+      socket.emit("shift", { from, to, gameId: socket.gameId });
+      socket.emit("nextTurn", { gameId: socket.gameId });
     }
   };
 
   const handleMove = (index) => {
     if (isMultiplayerGame) {
       if (!isPlayerTurn) return;
-      socket.emit("move", { index, gameId });
-      setCurrentPlayer(currentPlayer === "X" ? "O" : "X"); // Switch turn
-      socket.emit("nextTurn", { gameId }); // Emit next turn event
     }
     makeMove(index);
   };
