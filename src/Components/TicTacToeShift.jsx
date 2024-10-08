@@ -26,10 +26,14 @@ const TicTacToeShift = ({ gameMode, socket, isHost }) => {
     if (isMultiplayerGame && socket) {
       socket.on("opponentMove", ({ index }) => {
         makeMove(index, true);
+        setCurrentPlayer(playerSymbol); // Switch turn back to player
+        setTimeLeft(30); // Reset timer
       });
 
       socket.on("opponentShift", ({ from, to }) => {
         makeShift(from, to, true);
+        setCurrentPlayer(playerSymbol); // Switch turn back to player
+        setTimeLeft(30); // Reset timer
       });
 
       socket.on("playerDisconnected", () => {
@@ -130,6 +134,7 @@ const TicTacToeShift = ({ gameMode, socket, isHost }) => {
     if (isMultiplayerGame) {
       if (!isPlayerTurn) return;
       socket.emit("move", { index, gameId });
+      setCurrentPlayer(currentPlayer === "X" ? "O" : "X"); // Switch turn
       socket.emit("nextTurn", { gameId }); // Emit next turn event
     }
     makeMove(index);
@@ -139,6 +144,7 @@ const TicTacToeShift = ({ gameMode, socket, isHost }) => {
     if (isMultiplayerGame) {
       if (!isPlayerTurn) return;
       socket.emit("shift", { from, to, gameId });
+      setCurrentPlayer(currentPlayer === "X" ? "O" : "X"); // Switch turn
       socket.emit("nextTurn", { gameId }); // Emit next turn event
     }
     makeShift(from, to);
