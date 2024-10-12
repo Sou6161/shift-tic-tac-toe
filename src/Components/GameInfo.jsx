@@ -11,7 +11,9 @@ const GameInfo = ({
   const isShiftingPhase = movesX >= 3 && movesO >= 3;
 
   const getPlayerDisplay = () => {
-    return `Current Player: ${currentPlayer === "O" ? "AI" : currentPlayer}`;
+    return `Current Player: ${
+      currentPlayer === "O" ? "AI" : currentPlayer
+    }`;
   };
 
   const getTurnText = () => {

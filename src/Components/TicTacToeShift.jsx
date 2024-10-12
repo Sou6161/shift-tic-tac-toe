@@ -4,9 +4,7 @@ import GameInfo from "./GameInfo";
 import { getBestMove } from "./AI";
 
 const TicTacToeShift = () => {
-  const [playerSymbol, setPlayerSymbol] = useState(
-    Math.random() < 0.5 ? "X" : "O"
-  );
+  const [playerSymbol, setPlayerSymbol] = useState(Math.random() < 0.5 ? "X" : "O");
   const [board, setBoard] = useState(Array(9).fill(null));
   const [currentPlayer, setCurrentPlayer] = useState("X");
   const [winner, setWinner] = useState(null);
@@ -120,12 +118,7 @@ const TicTacToeShift = () => {
 
       const aiMoveTimeout = setTimeout(() => {
         const isPlacementPhase = aiSymbol === "X" ? movesX < 3 : movesO < 3;
-        const bestMove = getBestMove(
-          board,
-          aiSymbol,
-          isPlacementPhase,
-          aiSymbol === "X" ? movesX : movesO
-        );
+        const bestMove = getBestMove(board, aiSymbol, isPlacementPhase, aiSymbol === "X" ? movesX : movesO);
 
         if (bestMove) {
           if (isPlacementPhase) {
@@ -184,7 +177,7 @@ const TicTacToeShift = () => {
           isPlayerTurn={currentPlayer === playerSymbol}
         />
       </div>
-    </div>
+    </div>  
   );
 };
 
