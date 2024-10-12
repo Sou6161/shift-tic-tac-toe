@@ -1,4 +1,3 @@
-// GameInfo.jsx
 const GameInfo = ({
   currentPlayer,
   winner,
@@ -6,68 +5,40 @@ const GameInfo = ({
   movesX,
   movesO,
   isAIThinking,
-  gameMode,
   timeLeft,
   playerSymbol,
-  isPlayerTurn,
 }) => {
   const isShiftingPhase = movesX >= 3 && movesO >= 3;
 
   const getPlayerDisplay = () => {
-    if (gameMode === "multiplayer") {
-      return isPlayerTurn ? "Your turn" : "Opponent's turn";
-    } else {
-      return `Current Player: ${
-        currentPlayer === "O" && gameMode === "singleplayer"
-          ? "AI"
-          : currentPlayer
-      }`;
-    }
+    return `Current Player: ${currentPlayer === "O" ? "AI" : currentPlayer}`;
   };
 
   const getTurnText = () => {
     if (winner) return "";
-    if (gameMode === "multiplayer") {
-      return isPlayerTurn ? "Your Turn" : "Opponent's Turn";
-    } else {
-      return isAIThinking
-        ? "AI is thinking..."
-        : `Current Player: ${currentPlayer}`;
-    }
+    return isAIThinking
+      ? "AI is thinking..."
+      : `Current Player: ${currentPlayer}`;
   };
 
   const getTimeLeftText = () => {
-    if (gameMode === "multiplayer") {
-      return isPlayerTurn ? `Time Left: ${timeLeft}s` : "Opponent's Time";
-    } else {
-      return `Time Left: ${timeLeft}s`;
-    }
+    return `Time Left: ${timeLeft}s`;
   };
 
   return (
     <div className="text-center text-white mt-6">
       {winner ? (
         <h2 className="text-2xl font-semibold mb-4">
-          {gameMode === "singleplayer" && winner === "O"
-            ? "AI"
-            : gameMode === "multiplayer"
-            ? winner === playerSymbol
-              ? "You"
-              : "Opponent"
-            : `Player ${winner}`}{" "}
-          wins!
+          {winner === "O" ? "AI" : "Player X"} wins!
         </h2>
       ) : (
         <div>
           <h2 className="text-2xl font-semibold mb-4">{getTurnText()}</h2>
-          {gameMode === "multiplayer" && (
-            <p className="text-xl mb-2">You are Player {playerSymbol}</p>
-          )}
+          <p className="text-xl mb-2">You are Player X</p>
           <p className="text-xl mb-2">{getTimeLeftText()}</p>
           {!isShiftingPhase && (
             <p className="text-lg mb-4">
-              Moves left - X: {Math.max(0, 3 - movesX)},
-              {gameMode === "singleplayer" ? " AI" : " O"}:{" "}
+              Moves left - X: {Math.max(0, 3 - movesX)}, AI:{" "}
               {Math.max(0, 3 - movesO)}
             </p>
           )}

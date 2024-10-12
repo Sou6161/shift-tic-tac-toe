@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import Cell from './Cell';
+import React, { useState } from "react";
+import Cell from "./Cell";
 
 const Board = ({ board, onMove, onShift, canShift, currentPlayer }) => {
   const [selectedCell, setSelectedCell] = useState(null);

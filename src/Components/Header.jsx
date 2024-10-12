@@ -3,9 +3,7 @@ import bgVideo from "../Videos/TestBgVideo.mp4";
 import Gamelogo from "../Images/GameLogo.png";
 import { Link } from "react-router-dom";
 import { CircleUser, CornerUpRight, ThumbsDown, ThumbsUp } from "lucide-react";
-import TicTacToeShift from "./TicTacToeShift";
 import GameLauncher from "./GameLauncher";
-// import CarromGame from "./CarromGame";
 
 const Header = () => {
   const [comments, setComments] = useState([]);
@@ -144,7 +142,6 @@ const Header = () => {
             <div className="bg-gray-200 bg-opacity-30 backdrop-filter backdrop-blur-lg absolute inset-0"></div>
             <div className="relative z-10 p-8">
               <GameLauncher />
-              {/* <CarromGame/> */} 
             </div>
           </div>
 

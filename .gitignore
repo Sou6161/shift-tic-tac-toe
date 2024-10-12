@@ -27,6 +27,204 @@ dist-ssr
 
 
 
+#  if (gameMode === 'multiplayer' && !gameStarted) {
+#     return <MultiplayerLobby onGameStart={handleMultiplayerStart} />;
+#   }
+
+# const handleMultiplayerStart = (socketInstance, hostStatus) => {
+#     setSocket(socketInstance);
+#     setIsHost(hostStatus);
+#     setGameStarted(true);
+#   };
+
+
+
+
+
+# import React, { useState, useEffect } from 'react';
+# import io from 'socket.io-client';
+
+# const MultiplayerLobby = ({ onGameStart }) => {
+#   const [socket, setSocket] = useState(null);
+#   const [roomId, setRoomId] = useState('');
+#   const [playerSymbol, setPlayerSymbol] = useState('');
+#   const [gameState, setGameState] = useState(null);
+#   const [error, setError] = useState('');
+#   const [isConnected, setIsConnected] = useState(false);
+#   const [playerName, setPlayerName] = useState('');
+#   const [nameEntered, setNameEntered] = useState(false);
+
+#   useEffect(() => {
+#     const newSocket = io('http://localhost:8080');
+#     setSocket(newSocket);
+
+#     newSocket.on('connect', () => {
+#       setIsConnected(true);
+#       console.log('Connected to server');
+#     });
+
+#     newSocket.on('disconnect', () => {
+#       setIsConnected(false);
+#       console.log('Disconnected from server');
+#     });
+
+#     newSocket.on('roomCreated', (id) => {
+#       console.log('Room created:', id);
+#       setRoomId(id);
+#       setPlayerSymbol('X');
+#     });
+
+#     newSocket.on('joinedRoom', ({ roomId, symbol }) => {
+#       console.log('Joined room:', roomId, 'as', symbol);
+#       setRoomId(roomId);
+#       setPlayerSymbol(symbol);
+#     });
+
+#     newSocket.on('gameState', (state) => {
+#       console.log('Game state updated:', state);
+#       setGameState(state);
+#       if (state.gameStarted) {
+#         onGameStart(newSocket, state.currentPlayer === playerSymbol, playerSymbol);
+#       }
+#     });
+
+#     newSocket.on('error', (message) => {
+#       console.error('Error:', message);
+#       setError(message);
+#     });
+
+#     return () => newSocket.disconnect();
+#   }, [onGameStart, playerSymbol]);
+
+#   const createRoom = () => {
+#     if (isConnected) {
+#       console.log('Creating room...');
+#       socket.emit('createRoom', playerName);
+#     } else {
+#       setError('Not connected to server');
+#     }
+#   };
+
+#   const joinRoom = () => {
+#     if (isConnected && roomId) {
+#       console.log('Joining room:', roomId);
+#       socket.emit('joinRoom', { roomId, playerName });
+#     } else if (!isConnected) {
+#       setError('Not connected to server');
+#     } else {
+#       setError('Please enter a room ID');
+#     }
+#   };
+
+#   const startGame = () => {
+#     if (isConnected && roomId) {
+#       console.log('Starting game in room:', roomId);
+#       socket.emit('startGame', roomId);
+#     } else {
+#       setError('Unable to start game');
+#     }
+#   };
+
+#   const leaveRoom = () => {
+#     if (isConnected && roomId) {
+#       console.log('Leaving room:', roomId);
+#       socket.emit('leaveRoom', roomId);
+#       setRoomId('');
+#       setPlayerSymbol('');
+#       setGameState(null);
+#       setError('');
+#     }
+#   };
+
+#   return (
+#     <div className="bg-white bg-opacity-20 backdrop-blur-lg rounded-xl p-8 max-w-md mx-auto">
+#       <h2 className="text-2xl font-bold mb-6 text-white text-center">
+#         Multiplayer Lobby
+#       </h2>
+
+#       {error && <p className="text-red-500 mb-4">{error}</p>}
+
+#       {!nameEntered && (
+#         <div className="space-y-4">
+#           <input
+#             type="text"
+#             value={playerName}
+#             onChange={(e) => setPlayerName(e.target.value)}
+#             placeholder="Enter your name"
+#             className="w-full p-2 rounded-lg"
+#           />
+#           <button
+#             onClick={() => setNameEntered(true)}
+#             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg"
+#             disabled={!playerName}
+#           >
+#             Enter
+#           </button>
+#         </div>
+#       )}
+
+#       {nameEntered && (
+#         <div className="space-y-4">
+#           <button
+#             onClick={createRoom}
+#                         className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg"
+#             disabled={!playerName}
+#           >
+#             Create Room
+#           </button>
+#           <div className="flex space-x-2">
+#             <input
+#               type="text"
+#               value={roomId}
+#               onChange={(e) => setRoomId(e.target.value)}
+#               placeholder="Enter Room ID"
+#               className="flex-grow p-2 rounded-lg"
+#               disabled={!playerName}
+#             />
+#             <button
+#               onClick={joinRoom}
+#               className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg"
+#               disabled={!playerName || !roomId}
+#             >
+#               Join Room
+#             </button>
+#           </div>
+#         </div>
+#       )}
+
+#       {roomId && (
+#         <div className="text-center mt-4">
+#           <p className="text-white mb-2">
+#             Room ID: <span className="font-bold text-yellow-300">{roomId}</span>
+#           </p>
+#           <p className="text-purple-300 mb-4">Share this ID with your opponent</p>
+#           {playerSymbol === 'X' && !gameState?.gameStarted && (
+#             <button
+#               onClick={startGame}
+#               className="w-full mt-4 bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg"
+#             >
+#               Start Game
+#             </button>
+#           )}
+#           <button
+#             onClick={leaveRoom}
+#             className="w-full mt-4 bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg"
+#           >
+#             Leave Room
+#           </button>
+#         </div>
+#       )}
+
+#       {gameState?.gameStarted && (
+#         <p className="text-white text-center mt-4">Game is starting...</p>
+#       )}
+#     </div>
+#   );
+# };
+
+# export default MultiplayerLobby;
+
+
 
 
 
