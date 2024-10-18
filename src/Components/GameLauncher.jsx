@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import io from "socket.io-client";
+import MultiplayerGame from "./MultiplayerGame";
 import TicTacToeShift from "./TicTacToeShift";
 
 const socket = io("http://localhost:8080");
@@ -16,7 +17,16 @@ const GameLauncher = () => {
   const [isRoomCreator, setIsRoomCreator] = useState(false);
   const [roomCode, setRoomCode] = useState("");
   const [error, setError] = useState("");
-  const [messages, setMessages] = useState([]);
+  const [board, setBoard] = useState([
+    ["", "", ""],
+    ["", "", ""],
+    ["", "", ""],
+  ]);
+  const [currentPlayer, setCurrentPlayer] = useState("X");
+  const [gameOver, setGameOver] = useState(false);
+  const [isWaiting, setIsWaiting] = useState(true);
+
+  const game = new MultiplayerGame();
 
   useEffect(() => {
     socket.on("connect", () => {
@@ -25,8 +35,18 @@ const GameLauncher = () => {
 
     socket.on("playerJoined", (data) => {
       console.log("Player joined event received:", data);
-      if (data && data.message) {
+      if (data && data.message && data.players) {
         setMessage(data.message);
+        setPlayers(data.players);
+        if (data.players.length === 2) {
+          setIsWaiting(false);
+          if (isRoomCreator) {
+            setIsWaiting(false);
+          }
+        }
+      } else if (data && data.playerId && data.message) {
+        setMessage(data.message);
+        setPlayers((prevPlayers) => [...prevPlayers, data.playerId]);
       } else {
         console.error("Received playerJoined event with invalid data:", data);
       }
@@ -73,14 +93,34 @@ const GameLauncher = () => {
       setError("Room is full. Please try another room.");
     });
 
+    socket.on("makeMove", (row, col) => {
+      game.makeMove(row, col);
+      setBoard(game.board);
+      setCurrentPlayer(game.currentPlayer);
+      setGameOver(game.gameOver);
+    });
+
+    socket.on("resetGame", () => {
+      game.resetGame();
+      setBoard(game.board);
+      setCurrentPlayer(game.currentPlayer);
+      setGameOver(game.gameOver);
+    });
+
+    socket.on("gameStarted", () => {
+      console.log("Game started event received");
+      setGameStarted(true);
+    });
+
     return () => {
       socket.off("connect");
+      socket.off("makeMove");
+      socket.off("resetGame");
       socket.off("playerJoined");
       socket.off("updatePlayerList");
       socket.off("roomCreated");
       socket.off("roomJoined");
       socket.off("roomError");
-      socket.off("newMessage");
     };
   }, []);
 
@@ -92,13 +132,31 @@ const GameLauncher = () => {
     socket.emit("joinRoom", roomCode);
   };
 
-  const handleSendMessage = () => {
-    socket.emit("sendMessage", roomCode, message);
-    setMessage("");
+  const handleMakeMove = (row, col) => {
+    socket.emit("makeMove", roomId, row, col);
+  };
+
+  const handleResetGame = () => {
+    socket.emit("resetGame", roomId);
+  };
+
+  const handleStartGame = () => {
+    socket.emit("startGame", roomId);
+    setGameStarted(true);
   };
 
   if (gameStarted && gameMode === "singleplayer") {
-    return <TicTacToeShift gameMode={gameMode} />;
+    return (
+      <TicTacToeShift
+        gameMode={gameMode}
+        board={board}
+        currentPlayer={currentPlayer}
+        gameOver={gameOver}
+        handleMakeMove={handleMakeMove}
+        handleResetGame={handleResetGame}
+        roomId={roomId}
+      />
+    );
   }
 
   return (
@@ -171,7 +229,7 @@ const GameLauncher = () => {
                           value={roomCode}
                           onChange={(e) => setRoomCode(e.target.value)}
                           placeholder="Enter room code"
-                          className="px-4 py-2 mt- rounded-lg border-2 border-gray-700 focus:outline-none focus:border-blue-500 w-64"
+                          className="px-4 py-2 mt-4 rounded-lg border-2 border-gray-700 focus:outline-none focus:border-blue-500 w-64"
                         />
                         <button
                           onClick={handleJoinRoom}
@@ -195,58 +253,38 @@ const GameLauncher = () => {
                     <h1 className="text-xl font-bold mt-5 mb-5">
                       Room: {roomCode}
                     </h1>
-                    {/* <p className="text-lg font-bold">{message}</p> */}
-                    <div>
-                      {/* <h2>Players in room:</h2> */}
-                      {players.map((player, index) => (
-                        <div key={index}>
-                          <h3>{player}</h3>
-                        </div>
-                      ))}
-                    </div>
-                    {players.length === 2 && (
-                      <button
-                        onClick={() => {
-                          console.log("Starting multiplayer game");
-                          setGameStarted(true);
-                        }}
-                        className="bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 mt-4"
-                      >
-                        Start Game
-                      </button>
+                    {isWaiting && players.length < 2 ? (
+                      <p className="text-lg font-bold">
+                        Waiting for opponent to join...
+                      </p>
+                    ) : (
+                      <>
+                        {!gameStarted && isRoomCreator && (
+                          <button
+                            onClick={handleStartGame}
+                            className="bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105"
+                          >
+                            Start Game
+                          </button>
+                        )}
+                        {gameStarted && (
+                          <TicTacToeShift
+                            gameMode={gameMode}
+                            board={board}
+                            currentPlayer={currentPlayer}
+                            gameOver={gameOver}
+                            handleMakeMove={handleMakeMove}
+                            handleResetGame={handleResetGame}
+                            roomId={roomId}
+                          />
+                        )}
+                      </>
                     )}
-                    {players.length < 2 && players.includes(playerName) && (
-                      <p>Waiting for another player to join...</p>
-                    )}
-                    <input
-                      type="text"
-                      value={message}
-                      onChange={(e) => setMessage(e.target.value)}
-                      placeholder="Type a message"
-                      className="px-4 py-2 mt- rounded-lg border-2 border-gray-700 focus:outline-none focus:border-blue-500 w-64"
-                    />
-                    <button
-                      onClick={handleSendMessage}
-                      className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105"
-                    >
-                      Send Message
-                    </button>
-                    <ul>
-                      {messages.map((message, index) => (
-                        <li key={index}>{message}</li>
-                      ))}
-                    </ul>
                   </div>
                 )}
-                {error && <p className="text-red-500">{error}</p>}
               </>
             )}
           </div>
-          {!showRoomScreen && (
-            <div className="w-40 h-40 rounded-full overflow-hidden bg-gradient-to-br from-blue-400 to-purple-600 flex items-center justify-center">
-              <div className="text-6xl text-white font-bold">T³S</div>
-            </div>
-          )}
         </div>
         {error && (
           <div

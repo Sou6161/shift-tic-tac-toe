@@ -1,183 +1,234 @@
 import React, { useState, useEffect } from "react";
-import Board from "./Boards";
-import GameInfo from "./GameInfo";
-import { getBestMove } from "./AI";
+import io from "socket.io-client";
+
+const socket = io("http://localhost:8080");
 
 const TicTacToeShift = () => {
-  const [playerSymbol, setPlayerSymbol] = useState(Math.random() < 0.5 ? "X" : "O");
+  const [name, setName] = useState("");
+  const [room, setRoom] = useState("");
+  const [gameState, setGameState] = useState("initial");
   const [board, setBoard] = useState(Array(9).fill(null));
   const [currentPlayer, setCurrentPlayer] = useState("X");
   const [winner, setWinner] = useState(null);
-  const [movesX, setMovesX] = useState(0);
-  const [movesO, setMovesO] = useState(0);
-  const [isAIThinking, setIsAIThinking] = useState(false);
-  const [timeLeft, setTimeLeft] = useState({ X: 30, O: 30 });
+  const [moveCount, setMoveCount] = useState(0);
+  const [roomCode, setRoomCode] = useState("");
+  const [isCreator, setIsCreator] = useState(false);
+  const [opponentName, setOpponentName] = useState("");
+  const [selectedCell, setSelectedCell] = useState(null);
+  const [timer, setTimer] = useState(30);
 
-  const aiSymbol = playerSymbol === "X" ? "O" : "X";
+  useEffect(() => {
+    socket.on("roomCreated", (code) => {
+      setRoomCode(code);
+      setGameState("waiting");
+      setIsCreator(true);
+    });
 
-  const isValidMove = (index) => {
-    if (board[index] || winner) return false;
-    const isPlacementPhase = movesX < 3 || movesO < 3;
-    return isPlacementPhase;
+    socket.on("roomJoined", (data) => {
+      setRoomCode(data.room);
+      setGameState("waiting");
+      setIsCreator(false);
+      setOpponentName(data.opponentName);
+    });
+
+    socket.on("opponentJoined", (opponentName) => {
+      setOpponentName(opponentName);
+      setGameState("ready");
+    });
+
+    socket.on("gameStarted", () => {
+      setGameState("playing");
+      setMoveCount(0);
+      setBoard(Array(9).fill(null));
+      setCurrentPlayer("X");
+      setWinner(null);
+      setTimer(30);
+    });
+
+    socket.on("updateBoard", (newBoard) => {
+      setBoard(newBoard);
+      setCurrentPlayer((prev) => (prev === "X" ? "O" : "X"));
+      setMoveCount((prev) => prev + 1);
+      setTimer(30);
+    });
+
+    socket.on("gameOver", (winner) => setWinner(winner));
+
+    socket.on("updateTimer", (newTimer) => {
+      setTimer(newTimer);
+    });
+
+    return () => {
+      socket.off("roomCreated");
+      socket.off("roomJoined");
+      socket.off("opponentJoined");
+      socket.off("gameStarted");
+      socket.off("updateBoard");
+      socket.off("gameOver");
+      socket.off("updateTimer");
+    };
+  }, []);
+
+  const createRoom = () => {
+    if (name) {
+      socket.emit("createRoom", name);
+    }
   };
 
-  const isValidShift = (from, to) => {
-    if (board[to] !== null || winner) return false;
-    const isPlacementPhase = movesX < 3 || movesO < 3;
-    if (isPlacementPhase) return false;
-    return board[from] === currentPlayer;
+  const joinRoom = () => {
+    if (name && room) {
+      socket.emit("joinRoom", { name, room });
+    }
   };
 
-  const makeMove = (index) => {
-    if (!isValidMove(index)) return;
+  const startGame = () => {
+    socket.emit("startGame", roomCode);
+  };
 
-    const newBoard = [...board];
-    newBoard[index] = currentPlayer;
-    setBoard(newBoard);
+  const handleCellClick = (index) => {
+    if (winner || currentPlayer !== (isCreator ? "X" : "O")) return;
 
-    if (currentPlayer === "X") {
-      setMovesX(movesX + 1);
+    if (moveCount < 6) {
+      if (!board[index]) {
+        const newBoard = [...board];
+        newBoard[index] = currentPlayer;
+        socket.emit("move", { room: roomCode, board: newBoard });
+      }
     } else {
-      setMovesO(movesO + 1);
-    }
-
-    if (checkWinner(newBoard, currentPlayer)) {
-      setWinner(currentPlayer);
-    } else {
-      switchTurn();
-    }
-  };
-
-  const makeShift = (from, to) => {
-    if (!isValidShift(from, to)) return;
-
-    const newBoard = [...board];
-    newBoard[to] = board[from];
-    newBoard[from] = null;
-    setBoard(newBoard);
-
-    if (checkWinner(newBoard, currentPlayer)) {
-      setWinner(currentPlayer);
-    } else {
-      switchTurn();
+      if (selectedCell === null) {
+        if (board[index] === currentPlayer) {
+          setSelectedCell(index);
+        }
+      } else {
+        if (index !== selectedCell) {
+          if (!board[index]) {
+            const newBoard = [...board];
+            newBoard[index] = newBoard[selectedCell];
+            newBoard[selectedCell] = null;
+            socket.emit("move", { room: roomCode, board: newBoard });
+            setSelectedCell(null);
+          } else {
+            setSelectedCell(null);
+          }
+        } else {
+          setSelectedCell(null);
+        }
+      }
     }
   };
 
-  const switchTurn = () => {
-    setCurrentPlayer(currentPlayer === "X" ? "O" : "X");
-    setTimeLeft((prev) => ({
-      ...prev,
-      X: 30,
-      O: 30,
-    }));
-  };
-
-  const handleMove = (index) => {
-    if (currentPlayer === playerSymbol && isValidMove(index)) {
-      makeMove(index);
-    }
-  };
-
-  const handleShift = (from, to) => {
-    if (currentPlayer === playerSymbol && isValidShift(from, to)) {
-      makeShift(from, to);
-    }
-  };
-
-  const checkWinner = (board, player) => {
-    const winPatterns = [
-      [0, 1, 2],
-      [3, 4, 5],
-      [6, 7, 8],
-      [0, 3, 6],
-      [1, 4, 7],
-      [2, 5, 8],
-      [0, 4, 8],
-      [2, 4, 6],
-    ];
-
-    return winPatterns.some((pattern) =>
-      pattern.every((index) => board[index] === player)
+  const renderBoard = () => {
+    return (
+      <div className="grid grid-cols-3 gap-2">
+        {board.map((cell, index) => (
+          <button
+            key={index}
+            className={`w-20 h-20 text-4xl font-bold ${
+              cell
+                ? cell === "X"
+                  ? "bg-blue-200"
+                  : "bg-red-200"
+                : "bg-gray-200"
+            } ${selectedCell === index ? "border-4 border-yellow-400" : ""}`}
+            onClick={() => handleCellClick(index)}
+          >
+            {cell}
+          </button>
+        ))}
+      </div>
     );
   };
 
-  const resetGame = () => {
-    setPlayerSymbol(Math.random() < 0.5 ? "X" : "O");
-    setBoard(Array(9).fill(null));
-    setCurrentPlayer("X");
-    setWinner(null);
-    setMovesX(0);
-    setMovesO(0);
-    setIsAIThinking(false);
-    setTimeLeft({ X: 30, O: 30 });
-  };
-
-  useEffect(() => {
-    if (currentPlayer === aiSymbol && !winner) {
-      setIsAIThinking(true);
-
-      const aiMoveTimeout = setTimeout(() => {
-        const isPlacementPhase = aiSymbol === "X" ? movesX < 3 : movesO < 3;
-        const bestMove = getBestMove(board, aiSymbol, isPlacementPhase, aiSymbol === "X" ? movesX : movesO);
-
-        if (bestMove) {
-          if (isPlacementPhase) {
-            makeMove(bestMove.to);
-          } else {
-            makeShift(bestMove.from, bestMove.to);
-          }
-        }
-        setIsAIThinking(false);
-      }, 1000);
-
-      return () => clearTimeout(aiMoveTimeout);
-    }
-  }, [currentPlayer, winner, board, movesX, movesO, aiSymbol]);
-
-  useEffect(() => {
-    if (winner || isAIThinking) return;
-
-    const timer = setInterval(() => {
-      if (timeLeft[currentPlayer] > 0) {
-        setTimeLeft((prev) => ({
-          ...prev,
-          [currentPlayer]: prev[currentPlayer] - 1,
-        }));
-      } else {
-        switchTurn();
-      }
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [timeLeft, currentPlayer, winner, isAIThinking]);
-
-  const canShift = movesX >= 3 && movesO >= 3;
-
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-r from-teal-500 via-slate-500 to-rose-500 p-4">
-      <h1 className="text-4xl font-bold mb-8 text-white">Tic-Tac-Toe Shift</h1>
-      <div className="bg-white bg-opacity-20 backdrop-blur-lg rounded-xl p-8 shadow-xl">
-        <Board
-          board={board}
-          onMove={handleMove}
-          onShift={handleShift}
-          canShift={canShift}
-          currentPlayer={currentPlayer}
-        />
-        <GameInfo
-          currentPlayer={currentPlayer}
-          winner={winner}
-          onReset={resetGame}
-          movesX={movesX}
-          movesO={movesO}
-          isAIThinking={isAIThinking}
-          gameMode="singleplayer"
-          timeLeft={timeLeft[currentPlayer]}
-          playerSymbol={playerSymbol}
-          isPlayerTurn={currentPlayer === playerSymbol}
-        />
-      </div>
-    </div>  
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
+      {gameState === "initial" && (
+        <div className="space-y-4">
+          <input
+            type="text"
+            placeholder="Enter your name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="px-4 py-2 border rounded"
+          />
+          <div>
+            <button
+              onClick={createRoom}
+              className="px-4 py-2 bg-blue-500 text-white rounded mr-2"
+            >
+              Create Room
+            </button>
+            <input
+              type="text"
+              placeholder="Enter room code"
+              value={room}
+              onChange={(e) => setRoom(e.target.value)}
+              className="px-4 py-2 border rounded mr-2"
+            />
+            <button
+              onClick={joinRoom}
+              className="px-4 py-2 bg-green-500 text-white rounded"
+            >
+              Join Room
+            </button>
+          </div>
+        </div>
+      )}
+
+      {gameState === "waiting" && isCreator && (
+        <div className="text-center">
+          <p>Waiting for opponent to join...</p>
+          <p>Room Code: {roomCode}</p>
+        </div>
+      )}
+
+      {gameState === "waiting" && !isCreator && (
+        <div className="text-center">
+          <p>Waiting for the game to start...</p>
+          <p>Room Code: {roomCode}</p>
+          <p>Opponent: {opponentName}</p>
+        </div>
+      )}
+
+      {gameState === "ready" && isCreator && (
+        <div className="text-center">
+          <p>Opponent {opponentName} has joined the room!</p>
+          <p>Room Code: {roomCode}</p>
+          <button
+            onClick={startGame}
+            className="px-4 py-2 bg-yellow-500 text-white rounded mt-4"
+          >
+            Start Game
+          </button>
+        </div>
+      )}
+
+      {gameState === "playing" && (
+        <div className="text-center">
+          <h2 className="text-2xl font-bold mb-4">TicTacToe Shift</h2>
+          {renderBoard()}
+          {winner ? (
+            <p className="mt-4 text-xl font-bold">
+              {winner === "draw" ? "It's a draw!" : `${winner} wins!`}
+            </p>
+          ) : (
+            <div>
+              <p className="mt-4">Current player: {currentPlayer}</p>
+              <p>Moves: {moveCount}</p>
+              <p>Timer: {timer} seconds</p>
+              {moveCount >= 6 && (
+                <p>
+                  {currentPlayer === (isCreator ? "X" : "O")
+                    ? selectedCell === null
+                      ? "Your turn: Select a piece to move"
+                      : "Now select an empty space to move your piece"
+                    : `${currentPlayer}'s turn`}
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 };
 

@@ -234,3 +234,4 @@ dist-ssr
 
 
 
+# so you have to make functionality like in mobile the ludo game where the players can actually see in real time that the opponent player has done with his moves  and also make sure that do not remove or change the code for single player (vs AI ) code  in TicTacToeShift component you just have to add this above functionality which i have told you above because when you see the all codes of file you will see that game also has a single player mode in which single player plays with AI thats why i am telling you 
