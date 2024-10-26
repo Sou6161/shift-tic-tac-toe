@@ -235,3 +235,8 @@ dist-ssr
 
 
 # so you have to make functionality like in mobile the ludo game where the players can actually see in real time that the opponent player has done with his moves  and also make sure that do not remove or change the code for single player (vs AI ) code  in TicTacToeShift component you just have to add this above functionality which i have told you above because when you see the all codes of file you will see that game also has a single player mode in which single player plays with AI thats why i am telling you 
+
+
+
+
+you have to store both players data in real time  which is their total moves in that game  , and their total game wins and total games played and  now i want to do when the game ends show a screen or pop up a screen in which the text is written that " to save your score"  then below this text  you show that login button which is in Header.jsx  file  and below this in center  show  "OR " text  and below  this "OR" text show a Rematch button on clicking this rematch mbutton the game restarts and all user data you have stored which  is his  total moves in previous game and total wins and total game played 

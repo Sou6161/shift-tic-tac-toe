@@ -7,6 +7,7 @@ export default defineConfig({
   server: {
     host: true, // This exposes the server to your network
     port: 5173, // Default Vite port, change if needed
+    
   },
   build: {
     outDir: 'dist', // Specify the output directory

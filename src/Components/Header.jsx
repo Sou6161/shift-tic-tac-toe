@@ -1,11 +1,12 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import bgVideo from "../Videos/TestBgVideo.mp4";
 import Gamelogo from "../Images/GameLogo.png";
 import { Link } from "react-router-dom";
-import { CircleUser, CornerUpRight, ThumbsDown, ThumbsUp } from "lucide-react";
-import TicTacToeShift from "./TicTacToeShift";
-// import TestShift from "./TestShift";
-// import GameLauncher from "./GameLauncher";
+import { CornerUpRight, ThumbsDown, ThumbsUp } from "lucide-react";
+import GameLauncher from "./GameLauncher";
+// import { account, ID } from "../lib/appwrite";
+// import { checkSession, signUp, signIn, signOut } from "../lib/auth";
+
 
 const Header = () => {
   const [comments, setComments] = useState([]);
@@ -20,7 +21,90 @@ const Header = () => {
   });
   const [showReply, setShowReply] = useState(false);
   const [checked, setChecked] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [signInView, setSignInView] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [name, setName] = useState("");
   const [error, setError] = useState(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  // useEffect(() => {
+  //   const verifySession = async () => {
+  //     try {
+  //       const session = await checkSession();
+  //       if (session) {
+  //         setIsLoggedIn(true);
+  //         setShowForm(false);
+  //       } else {
+  //         setIsLoggedIn(false);
+  //       }
+  //     } catch (error) {
+  //       console.error("Error verifying session:", error);
+  //       setIsLoggedIn(false);
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+  //   verifySession();
+  // }, []);
+
+ 
+
+  // const handleLogout = async () => {
+  //   try {
+  //     await signOut();
+  //     setIsLoggedIn(false);
+  //     setShowForm(true);
+  //     setSignInView(false);
+  //   } catch (error) {
+  //     console.error("Error logging out:", error);
+  //   }
+  // };
+
+  // const handleSubmitSignUp = async (e) => {
+  //   e.preventDefault();
+  //   if (password !== confirmPassword) {
+  //     setError("Passwords do not match");
+  //     return;
+  //   }
+  //   try {
+  //     await signUp(email, password, name);
+  //     setIsLoggedIn(true);
+  //     setShowForm(false);
+  //     setError(null);
+  //   } catch (error) {
+  //     setError(error.message);
+  //   }
+  // };
+
+  // const handleSubmitSignIn = async (e) => {
+  //   e.preventDefault();
+  //   try {
+  //     await signIn(email, password);
+  //     setIsLoggedIn(true);
+  //     setShowForm(false);
+  //     setError(null);
+  //   } catch (error) {
+  //     setError(error.message);
+  //   }
+  // };
+
+  // const toggleSignIn = () => {
+  //   setSignInView(true);
+  //   setShowForm(true);
+  // };
+
+  // const toggleSignUp = () => {
+  //   setSignInView(false);
+  //   setShowForm(true);
+  // };
+
+  // // if (loading) {
+  // //   return <div>Loading...</div>;
+  // // }
 
   const handleCheckboxChange = (e) => {
     setChecked(e.target.checked);
@@ -109,7 +193,7 @@ const Header = () => {
       </div>
 
       <div className="relative">
-        <nav className="sticky top-0 z-50 container mx-auto flex justify-between items-center px-2 bg-white bg-opacity-20 mt-2 rounded-full backdrop-filter backdrop-blur-lg">
+        <nav className="sticky w-[50vw] top-0 z-50 container mx-auto flex justify-between items-center px-2 bg-white bg-opacity-20 mt-2 rounded-full backdrop-filter backdrop-blur-lg">
           <div className="logo">
             <Link to="/">
               <img className="w-20 h-20" src={Gamelogo} alt="" />
@@ -117,35 +201,156 @@ const Header = () => {
           </div>
           <ul className="hidden md:flex items-center space-x-4 text-white text-lg">
             <li>
-              <a href="#">Home</a>
-            </li>
-            <li>
-              <a href="#">About</a>
+              <a href="#">Leaderboard</a>
             </li>
             <li>
               <a href="#">Contact</a>
             </li>
+            <li>
+              <a href="#">About</a>
+            </li>
           </ul>
-          <div className="flex items-center space-x-4">
-            <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-              Sign Up
-            </button>
-            <button className="bg-orange-500 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded">
-              Sign In
-            </button>
-            <button className="">
-              <CircleUser size={32} className="bg-white rounded-full" />
-            </button>
-          </div>
+          {/* <div className="flex items-center space-x-4">
+            {isLoggedIn ? (
+              <div>
+                <button onClick={handleLogout}>Logout</button>
+              </div>
+            ) : (
+              <div>
+                <button onClick={toggleSignIn}>Login</button>
+              </div>
+            )}
+            {showForm && (
+              <div className="absolute right-14 mt-4 top-14 bg-white p-4 rounded shadow-md w-80">
+                {signInView ? (
+                  <form onSubmit={handleSubmitSignIn}>
+                    <h4 className="text-lg font-bold mb-4">Sign In</h4>
+                    <div className="mb-4">
+                      <label className="block text-gray-700 text-sm font-bold mb-2">
+                        Email
+                      </label>
+                      <input
+                        type="email"
+                        className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                        placeholder="Email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className="mb-4">
+                      <label className="block text-gray-700 text-sm font-bold mb-2">
+                        Password
+                      </label>
+                      <input
+                        type="password"
+                        className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                        placeholder="Password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                    >
+                      Sign In
+                    </button>
+                    <p className="text-sm text-gray-700 mt-4">
+                      Don't have an account?{" "}
+                      <span
+                        className="text-blue-500 cursor-pointer"
+                        onClick={toggleSignUp}
+                      >
+                        Sign Up
+                      </span>
+                    </p>
+                    {error && <p style={{ color: "red" }}>{error}</p>}
+                  </form>
+                ) : (
+                  <form onSubmit={handleSubmitSignUp}>
+                    <h4 className="text-lg font-bold mb-4">Sign Up</h4>
+                    <div className="mb-4">
+                      <label className="block text-gray-700 text-sm font-bold mb-2">
+                        Name
+                      </label>
+                      <input
+                        type="text"
+                        className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                        placeholder="Name"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className="mb-4">
+                      <label className="block text-gray-700 text-sm font-bold mb-2">
+                        Email
+                      </label>
+                      <input
+                        type="email"
+                        className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                        placeholder="Email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className="mb-4">
+                      <label className="block text-gray-700 text-sm font-bold mb-2">
+                        Password
+                      </label>
+                      <input
+                        type="password"
+                        className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                        placeholder="Password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className="mb-4">
+                      <label className="block text-gray-700 text-sm font-bold mb-2">
+                        Confirm Password
+                      </label>
+                      <input
+                        type="password"
+                        className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                        placeholder="Confirm Password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                    >
+                      Sign Up
+                    </button>
+                    <p className="text-sm text-gray-700 mt-4">
+                      Already have an account?{" "}
+                      <span
+                        className="text-blue-500 cursor-pointer"
+                        onClick={toggleSignIn}
+                      >
+                        Sign In
+                      </span>
+                    </p>
+                    {error && <p style={{ color: "red" }}>{error}</p>}
+                  </form>
+                )}
+              </div>
+            )}
+          </div> */}
         </nav>
 
         <div className="container mx-auto mt-20 pb-20">
           <div className="w-[85vw] min-h-[80vh] mx-auto rounded-xl border-[1px]  relative overflow-hidden mb-10">
             <div className="bg-gray-200 bg-opacity-30 backdrop-filter backdrop-blur-lg absolute inset-0"></div>
             <div className="relative z-10 p-8">
-              {/* <GameLauncher /> */}
-              {/* <TestShift/> */}
-              <TicTacToeShift/>
+              <GameLauncher />
             </div>
           </div>
 

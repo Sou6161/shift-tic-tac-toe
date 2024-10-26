@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import io from "socket.io-client";
+import GameEndPopup from "./GameEndPopup";
 
 const socket = io("http://localhost:8080");
 
@@ -15,7 +16,43 @@ const TicTacToeShift = () => {
   const [isCreator, setIsCreator] = useState(false);
   const [opponentName, setOpponentName] = useState("");
   const [selectedCell, setSelectedCell] = useState(null);
-  const [timer, setTimer] = useState(30);
+  const [timer, setTimer] = useState(20);
+  const [isMyTurn, setIsMyTurn] = useState(false);
+  const [timerActive, setTimerActive] = useState(false);
+  const [showPopup, setShowPopup] = useState(false);
+  const [playerData, setPlayerData] = useState({
+    totalMoves: 0,
+    wins: 0,
+    gamesPlayed: 0,
+  });
+  
+
+
+  const handleRematch = () => {
+    setShowPopup(false);
+    setGameState("initial");
+    setBoard(Array(9).fill(null));
+    setCurrentPlayer("X");
+    setWinner(null);
+    setMoveCount(0);
+    setTimer(20);
+    setIsMyTurn(isCreator);
+    setTimerActive(isCreator);
+    setSelectedCell(null);
+    socket.emit("rematch", { room: roomCode });
+    setShowPopup(false);
+  };
+
+  useEffect(() => {
+    socket.on("gameUpdated", (room) => {
+      setGameState(room.gameState);
+      setBoard(room.board);
+      setCurrentPlayer(room.currentPlayer);
+      setWinner(room.winner);
+      setMoveCount(room.moveCount);
+      setTimer(room.timer);
+    });
+  }, []);
 
   useEffect(() => {
     socket.on("roomCreated", (code) => {
@@ -42,21 +79,44 @@ const TicTacToeShift = () => {
       setBoard(Array(9).fill(null));
       setCurrentPlayer("X");
       setWinner(null);
-      setTimer(30);
+      setTimer(20);
+      setIsMyTurn(isCreator);
+      setTimerActive(isCreator);
     });
 
     socket.on("updateBoard", (newBoard) => {
       setBoard(newBoard);
       setCurrentPlayer((prev) => (prev === "X" ? "O" : "X"));
       setMoveCount((prev) => prev + 1);
-      setTimer(30);
+      setTimer(20);
+      setIsMyTurn((prev) => !prev);
+      setTimerActive((prev) => !prev);
     });
 
-    socket.on("gameOver", (winner) => setWinner(winner));
+    socket.on("gameOver", (winner) => {
+      setWinner(winner);
+      setTimerActive(false);
+    });
 
     socket.on("updateTimer", (newTimer) => {
       setTimer(newTimer);
     });
+
+    socket.on("turnChange", (newCurrentPlayer) => {
+      setCurrentPlayer(newCurrentPlayer);
+      setIsMyTurn(
+        (isCreator && newCurrentPlayer === "X") ||
+          (!isCreator && newCurrentPlayer === "O")
+      );
+      setTimerActive(
+        (isCreator && newCurrentPlayer === "X") ||
+          (!isCreator && newCurrentPlayer === "O")
+      );
+      setTimer(20);
+    });
+
+
+    
 
     return () => {
       socket.off("roomCreated");
@@ -66,8 +126,26 @@ const TicTacToeShift = () => {
       socket.off("updateBoard");
       socket.off("gameOver");
       socket.off("updateTimer");
+      socket.off("turnChange");
     };
-  }, []);
+  }, [isCreator]);
+
+  useEffect(() => {
+    let interval;
+    if (gameState === "playing" && timerActive && !winner) {
+      interval = setInterval(() => {
+        setTimer((prevTimer) => {
+          if (prevTimer > 0) {
+            return prevTimer - 1;
+          } else {
+            socket.emit("timeUp", { room: roomCode });
+            return 0;
+          }
+        });
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [gameState, timerActive, winner, roomCode]);
 
   const createRoom = () => {
     if (name) {
@@ -86,7 +164,7 @@ const TicTacToeShift = () => {
   };
 
   const handleCellClick = (index) => {
-    if (winner || currentPlayer !== (isCreator ? "X" : "O")) return;
+    if (winner || !isMyTurn) return;
 
     if (moveCount < 6) {
       if (!board[index]) {
@@ -140,7 +218,7 @@ const TicTacToeShift = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
+    <div className="flex flex-col items-center justify-center min-h-screen -mt-[10vh] rounded-lg bg-gray-900 w-[70vw]">
       {gameState === "initial" && (
         <div className="space-y-4">
           <input
@@ -175,14 +253,14 @@ const TicTacToeShift = () => {
       )}
 
       {gameState === "waiting" && isCreator && (
-        <div className="text-center">
+        <div className="text-center text-white">
           <p>Waiting for opponent to join...</p>
           <p>Room Code: {roomCode}</p>
         </div>
       )}
 
       {gameState === "waiting" && !isCreator && (
-        <div className="text-center">
+        <div className="text-center text-white">
           <p>Waiting for the game to start...</p>
           <p>Room Code: {roomCode}</p>
           <p>Opponent: {opponentName}</p>
@@ -190,7 +268,7 @@ const TicTacToeShift = () => {
       )}
 
       {gameState === "ready" && isCreator && (
-        <div className="text-center">
+        <div className="text-center text-white">
           <p>Opponent {opponentName} has joined the room!</p>
           <p>Room Code: {roomCode}</p>
           <button
@@ -214,19 +292,23 @@ const TicTacToeShift = () => {
             <div>
               <p className="mt-4">Current player: {currentPlayer}</p>
               <p>Moves: {moveCount}</p>
-              <p>Timer: {timer} seconds</p>
+              <p>Timer: {isMyTurn ? timer : "-"} seconds</p>
               {moveCount >= 6 && (
                 <p>
-                  {currentPlayer === (isCreator ? "X" : "O")
+                  {isMyTurn
                     ? selectedCell === null
                       ? "Your turn: Select a piece to move"
                       : "Now select an empty space to move your piece"
-                    : `${currentPlayer}'s turn`}
+                    : `Waiting for ${opponentName}'s move`}
                 </p>
               )}
             </div>
           )}
         </div>
+      )}
+
+      {gameState === "playing" && winner !== null && (
+        <GameEndPopup handleRematch={handleRematch} playerData={playerData} />
       )}
     </div>
   );
