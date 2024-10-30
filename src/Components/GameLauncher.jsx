@@ -4,7 +4,7 @@ import SingleVsAi from "./SingleVsAi";
 import LoginButton from "./LoginButton";
 import { saveUserData, getUserData } from '../lib/database';
 
-const GameLauncher = () => {
+const GameLauncher = ({ isDark }) => {
   const [gameMode, setGameMode] = useState(null);
   const [difficulty, setDifficulty] = useState(null);
   const [showGameModes, setShowGameModes] = useState(false);
@@ -16,17 +16,23 @@ const GameLauncher = () => {
     gamesPlayed: 0,
   });
 
+
   useEffect(() => {
-    // Check login status on mount
-    const loginStatus = localStorage.getItem("isLoggedIn") === "true";
-    setIsLoggedIn(loginStatus);
+    const checkInitialLoginStatus = () => {
+      const loginStatus = localStorage.getItem("isLoggedIn") === "true";
+      console.log("Initial login status:", loginStatus); // Debug log
+      setIsLoggedIn(loginStatus);
+    };
+    checkInitialLoginStatus();
   }, []);
 
   const handleLogin = (status) => {
+    console.log("Login status changed:", status); // Debug log
     setIsLoggedIn(status);
   };
 
   const handleLoginSuccess = () => {
+    console.log("Login success called"); // Debug log
     setIsLoggedIn(true);
   };
 
@@ -67,7 +73,9 @@ const GameLauncher = () => {
   );
 
   return (
-    <div className="flex flex-col items-center justify-center rounded-lg min-h-screen mt-7 bg-gradient-to-r from-cyan-400 via-purple-400 to-yellow-300 filter">
+    <div className={`flex flex-col items-center justify-center rounded-lg min-h-screen mt-7 
+      ${isDark ? 'bg-gradient-to-r from-gray-90 via-gray-700 to-gray-500' : 'bg-gradient-to-r from-cyan-400 via-purple-400 to-yellow-300'} 
+      filter`}>
       {/* Login Button always visible at the top */}
       <div className="absolute top-2 right-4">
       <LoginButton 
@@ -96,7 +104,7 @@ const GameLauncher = () => {
             <button
               className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
               onClick={() => setShowGameModes(true)}
-            >
+            > 
               Play Now
             </button>
           </div>
@@ -138,7 +146,7 @@ const GameLauncher = () => {
           )}
           {gameMode === "multi" && (
             <div className="mt-20">
-              <TicTacToeShift />
+              <TicTacToeShift isDark={isDark} />
             </div>
           )}
         </div>

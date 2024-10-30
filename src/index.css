@@ -2,13 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
-
 .blur-lg {
-    filter: blur(9px);
-    backdrop-filter: blur(8px);
-  }
+  filter: blur(9px);
+  backdrop-filter: blur(8px);
+}
 
-  /* From Uiverse.io by vinodjangid07 */ 
+/* From Uiverse.io by vinodjangid07 */
 .Btn-Container {
   display: flex;
   width: 170px;
@@ -107,7 +106,7 @@
   margin: 10px;
   border: none;
   border-radius: 5px;
-  background-color: #4CAF50;
+  background-color: #4caf50;
   color: #fff;
   cursor: pointer;
 }
@@ -132,7 +131,6 @@
 .game-over p {
   font-size: 18px;
 }
-
 
 /* reversi  */
 
@@ -244,7 +242,6 @@
   font-size: 18px;
 }
 
-
 /* TicTacToe Shift */
 
 /* Global Styles */
@@ -354,7 +351,27 @@ body {
   text-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
 }
 
+/* @import url("https://fonts.googleapis.com/css2?family=Playwrite+GB+S:ital,wght@0,100..400;1,100..400&display=swap");
+
+body {
+  @apply font-playwrite;
+} */
 
 
-/* play Now button  */
+.playwrite-gb-s-font1 {
+  font-family: "Playwrite GB S", cursive;
+  font-optical-sizing: auto;
+  font-weight: 100;
+  font-style: normal;
+}
 
+
+
+.dancing-script-cursive {
+  font-family: "Dancing Script", cursive;
+  font-optical-sizing: auto;
+  font-weight:  100;
+  font-style: normal;
+}
+
+    

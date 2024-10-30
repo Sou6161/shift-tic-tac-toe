@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
 import io from "socket.io-client";
-import GameEndPopup from "./GameEndPopup";
+// import GameEndPopup from "./GameEndPopup";
+import OpponentGameEndPopup from "./OpponentGameEndPopup";
 
 const socket = io("http://localhost:8080");
 
-const TicTacToeShift = () => {
+const TicTacToeShift = ({isDark}) => {
   const [name, setName] = useState("");
   const [room, setRoom] = useState("");
   const [gameState, setGameState] = useState("initial");
@@ -25,12 +26,21 @@ const TicTacToeShift = () => {
     wins: 0,
     gamesPlayed: 0,
   });
-  
 
+  const [opponentData, setOpponentData] = useState({
+    wins: 0,
+    gamesPlayed: 0,
+  });
+
+  const [myMoves, setMyMoves] = useState([]);
+  const [opponentMoves, setOpponentMoves] = useState([]);
+  const [myMoveCount, setMyMoveCount] = useState(0);
+  const [opponentMoveCount, setOpponentMoveCount] = useState(0);
+  const [playerMoves, setPlayerMoves] = useState({ X: [], O: [] });
 
   const handleRematch = () => {
-    setShowPopup(false);
-    setGameState("initial");
+    // Reset game state for creator
+    setGameState("playing");
     setBoard(Array(9).fill(null));
     setCurrentPlayer("X");
     setWinner(null);
@@ -39,22 +49,57 @@ const TicTacToeShift = () => {
     setIsMyTurn(isCreator);
     setTimerActive(isCreator);
     setSelectedCell(null);
+    setMyMoves([]);
+    setOpponentMoves([]);
+    setMyMoveCount(0);
+    setOpponentMoveCount(0);
+    setShowPopup(false);
+
+    // Emit rematch event to server
     socket.emit("rematch", { room: roomCode });
+  };
+
+  const handleLeaveRoom = () => {
+    socket.emit("leaveRoom", roomCode);
+    setRoomCode("");
+    setOpponentName("");
+    setGameState("waiting");
     setShowPopup(false);
   };
 
+  const handleCreateRoom = () => {
+    socket.emit("createRoom", name);
+  };
+
   useEffect(() => {
-    socket.on("gameUpdated", (room) => {
-      setGameState(room.gameState);
-      setBoard(room.board);
-      setCurrentPlayer(room.currentPlayer);
-      setWinner(room.winner);
-      setMoveCount(room.moveCount);
-      setTimer(room.timer);
+    const board = localStorage.getItem("gameBoard");
+    const moves = localStorage.getItem("moves");
+    if (board) setBoard(JSON.parse(board));
+    if (moves) setMoves(JSON.parse(moves));
+  }, []);
+
+  useEffect(() => {
+    socket.on("gameUpdated", (data) => {
+      setGameState(data.gameState);
+      setBoard(data.board);
+      setCurrentPlayer(data.currentPlayer);
+      setMoveCount(data.moveCount);
+      setTimer(data.timer);
+      setPlayerMoves(data.playerMoves);
+      setMyMoveCount(data.moveCount);
+      setOpponentMoveCount(data.moveCount);
+      setShowPopup(false); // Hide OpponentGameEndPopup
     });
   }, []);
 
   useEffect(() => {
+    socket.on("disconnect", () => {
+      console.log("Disconnected from server");
+      // Reconnect after a short delay
+      setTimeout(() => {
+        socket.io.reconnect();
+      }, 1000);
+    });
     socket.on("roomCreated", (code) => {
       setRoomCode(code);
       setGameState("waiting");
@@ -93,9 +138,65 @@ const TicTacToeShift = () => {
       setTimerActive((prev) => !prev);
     });
 
-    socket.on("gameOver", (winner) => {
-      setWinner(winner);
+    socket.on("updateMoveCounts", (counts) => {
+      if (isCreator) {
+        setMyMoveCount(counts.X);
+        setOpponentMoveCount(counts.O);
+      } else {
+        setMyMoveCount(counts.O);
+        setOpponentMoveCount(counts.X);
+      }
+    });
+
+    socket.on("gameOver", (data) => {
+      setWinner(data.winner);
       setTimerActive(false);
+      if (isCreator) {
+        setMyMoveCount(data.moveCounts.X);
+      } else {
+        setMyMoveCount(data.moveCounts.O);
+      }
+
+      // Update player score
+      if (data.winner === (isCreator ? "X" : "O")) {
+        setPlayerData((prevData) => ({
+          ...prevData,
+          wins: prevData.wins + 1,
+          gamesPlayed: prevData.gamesPlayed + 1,
+        }));
+      } else {
+        setPlayerData((prevData) => ({
+          ...prevData,
+          gamesPlayed: prevData.gamesPlayed + 1,
+        }));
+      }
+    });
+
+    socket.on("opponentLeft", () => {
+      setGameState("abandoned");
+      setWinner("opponent left");
+      setShowPopup(true);
+      setTimeout(() => {
+        setGameState("waiting");
+        setShowPopup(false);
+      }, 5000); // Reset game state after 5 seconds
+    });
+
+    socket.on("playerLeft", (name) => {
+      if (gameState === "playing" || gameState === "waiting") {
+        // Update opponent's name to empty string
+        setOpponentName("");
+
+        // Update game state to 'waiting'
+        setGameState("waiting");
+
+        // Show a message indicating the player has left
+        alert(`${name} has left the game`);
+
+        // Optionally, reset the board and move count
+        setBoard(Array(9).fill(null));
+        setMoveCount(0);
+      }
     });
 
     socket.on("updateTimer", (newTimer) => {
@@ -115,8 +216,51 @@ const TicTacToeShift = () => {
       setTimer(20);
     });
 
+    socket.on("updateMoves", (data) => {
+      const isMyMove =
+        (isCreator && data.player === "X") ||
+        (!isCreator && data.player === "O");
 
-    
+      if (isMyMove) {
+        setMyMoveCount(data.moveCount);
+      }
+    });
+
+    socket.on("rematchInitiated", () => {
+      // Reset game state for opponent
+      setGameState("playing");
+      setBoard(Array(9).fill(null));
+      setCurrentPlayer("X");
+      setWinner(null);
+      setMoveCount(0);
+      setTimer(20);
+      setIsMyTurn(!isCreator); // Opponent's turn will be opposite of creator's
+      setTimerActive(!isCreator);
+      setSelectedCell(null);
+      setMyMoves([]);
+      setOpponentMoves([]);
+      setMyMoveCount(0);
+      setOpponentMoveCount(0);
+      setShowPopup(false);
+    });
+
+    socket.on("rematchAccepted", (data) => {
+      // Reset game state for ALL players
+      setGameState("playing");
+      setBoard(data.board);
+      setCurrentPlayer(data.currentPlayer);
+      setWinner(null);
+      setMoveCount(data.moveCount);
+      setTimer(data.timer);
+      setIsMyTurn(isCreator); // Creator (X) starts first
+      setTimerActive(isCreator);
+      setSelectedCell(null);
+      setMyMoves([]);
+      setOpponentMoves([]);
+      setMyMoveCount(0);
+      setOpponentMoveCount(0);
+      setShowPopup(false);
+    });
 
     return () => {
       socket.off("roomCreated");
@@ -124,11 +268,35 @@ const TicTacToeShift = () => {
       socket.off("opponentJoined");
       socket.off("gameStarted");
       socket.off("updateBoard");
+      socket.off("updateMoves");
       socket.off("gameOver");
-      socket.off("updateTimer");
       socket.off("turnChange");
+      socket.off("rematchInitiated");
+      socket.off("rematchAccepted");
+      socket.off("disconnect");
     };
-  }, [isCreator]);
+  }, [isCreator, socket]);
+
+  useEffect(() => {
+    socket.on("rematch", () => {
+      // Reset game state
+      setGameState("playing");
+      setBoard(Array(9).fill(null));
+      setCurrentPlayer("X");
+      setWinner(null);
+      setMoveCount(0);
+      setTimer(20);
+      setIsMyTurn(isCreator);
+      setTimerActive(isCreator);
+      setSelectedCell(null);
+
+      // Reset moves data for both players
+      setMyMoves([]);
+      setOpponentMoves([]);
+      setMyMoveCount(0);
+      setOpponentMoveCount(0);
+    });
+  }, [isCreator, roomCode]);
 
   useEffect(() => {
     let interval;
@@ -170,7 +338,23 @@ const TicTacToeShift = () => {
       if (!board[index]) {
         const newBoard = [...board];
         newBoard[index] = currentPlayer;
-        socket.emit("move", { room: roomCode, board: newBoard });
+
+        // Only track my move
+        const timestamp = Date.now();
+        const moveData = {
+          move: [index],
+          timestamp: timestamp,
+        };
+
+        setMyMoves((prevMoves) => [...prevMoves, moveData]);
+
+        socket.emit("move", {
+          room: roomCode,
+          board: newBoard,
+          player: currentPlayer,
+          timestamp: timestamp,
+          move: [index],
+        });
       }
     } else {
       if (selectedCell === null) {
@@ -178,16 +362,28 @@ const TicTacToeShift = () => {
           setSelectedCell(index);
         }
       } else {
-        if (index !== selectedCell) {
-          if (!board[index]) {
-            const newBoard = [...board];
-            newBoard[index] = newBoard[selectedCell];
-            newBoard[selectedCell] = null;
-            socket.emit("move", { room: roomCode, board: newBoard });
-            setSelectedCell(null);
-          } else {
-            setSelectedCell(null);
-          }
+        if (index !== selectedCell && !board[index]) {
+          const newBoard = [...board];
+          newBoard[index] = newBoard[selectedCell];
+          newBoard[selectedCell] = null;
+
+          // Only track my move
+          const timestamp = Date.now();
+          const moveData = {
+            move: [selectedCell, index],
+            timestamp: timestamp,
+          };
+
+          setMyMoves((prevMoves) => [...prevMoves, moveData]);
+
+          socket.emit("move", {
+            room: roomCode,
+            board: newBoard,
+            player: currentPlayer,
+            timestamp: timestamp,
+            move: [selectedCell, index],
+          });
+          setSelectedCell(null);
         } else {
           setSelectedCell(null);
         }
@@ -256,6 +452,7 @@ const TicTacToeShift = () => {
         <div className="text-center text-white">
           <p>Waiting for opponent to join...</p>
           <p>Room Code: {roomCode}</p>
+          <button onClick={handleLeaveRoom}>Leave Room</button>
         </div>
       )}
 
@@ -284,31 +481,60 @@ const TicTacToeShift = () => {
         <div className="text-center">
           <h2 className="text-2xl font-bold mb-4">TicTacToe Shift</h2>
           {renderBoard()}
-          {winner ? (
-            <p className="mt-4 text-xl font-bold">
-              {winner === "draw" ? "It's a draw!" : `${winner} wins!`}
-            </p>
-          ) : (
-            <div>
-              <p className="mt-4">Current player: {currentPlayer}</p>
-              <p>Moves: {moveCount}</p>
-              <p>Timer: {isMyTurn ? timer : "-"} seconds</p>
-              {moveCount >= 6 && (
-                <p>
-                  {isMyTurn
-                    ? selectedCell === null
-                      ? "Your turn: Select a piece to move"
-                      : "Now select an empty space to move your piece"
-                    : `Waiting for ${opponentName}'s move`}
-                </p>
-              )}
-            </div>
-          )}
+          <div className="mt-4 space-y-2 text-white">
+            <p>Your moves: {myMoveCount}</p>
+            {myMoves.length > 0 && (
+              <div className="mt-2">
+                <h3>Your Move History:</h3>
+                <ul>
+                  {myMoves.map((move, index) => (
+                    <li key={index}>
+                      Move {index + 1}: Position
+                      {move.move.length > 1 ? "s" : ""} {move.move.join(" → ")}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {winner ? (
+              <p className="text-4xl font-bold">
+                {winner === "draw" ? "It's a draw!" : `${winner} wins!`}
+              </p>
+            ) : (
+              <div>
+                <p>Current player: {currentPlayer}</p>
+                <p>Timer: {isMyTurn ? timer : "-"} seconds</p>
+                {moveCount >= 6 && (
+                  <p>
+                    {isMyTurn
+                      ? selectedCell === null
+                        ? "Your turn: Select a piece to move"
+                        : "Now select an empty space to move your piece"
+                      : `Waiting for ${opponentName}'s move`}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {gameState === "abandoned" && (
+        <div>
+          <h2>Game Abandoned!</h2>
+          <h2>{winner}</h2>
+          <button onClick={handleCreateRoom}>Create New Room</button>
         </div>
       )}
 
       {gameState === "playing" && winner !== null && (
-        <GameEndPopup handleRematch={handleRematch} playerData={playerData} />
+        <OpponentGameEndPopup
+          handleRematch={handleRematch}
+          playerData={playerData}
+          opponentMoves={myMoves}
+          isCreator={isCreator}
+          isDark={isDark}
+        />
       )}
     </div>
   );
