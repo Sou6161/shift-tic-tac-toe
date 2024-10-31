@@ -5,7 +5,7 @@ import OpponentGameEndPopup from "./OpponentGameEndPopup";
 
 const socket = io("http://localhost:8080");
 
-const TicTacToeShift = ({isDark}) => {
+const TicTacToeShift = ({ isDark }) => {
   const [name, setName] = useState("");
   const [room, setRoom] = useState("");
   const [gameState, setGameState] = useState("initial");
@@ -37,6 +37,28 @@ const TicTacToeShift = ({isDark}) => {
   const [myMoveCount, setMyMoveCount] = useState(0);
   const [opponentMoveCount, setOpponentMoveCount] = useState(0);
   const [playerMoves, setPlayerMoves] = useState({ X: [], O: [] });
+  const [showRoomControls, setShowRoomControls] = useState(false);
+
+  const handleBack = () => {
+    // Reset necessary state
+    setGameState("initial");
+    setBoard(Array(9).fill(null));
+    setWinner(null);
+    setMoveCount(0);
+    setMyMoves([]);
+    setOpponentMoves([]);
+    setMyMoveCount(0);
+    setOpponentMoveCount(0);
+    setShowPopup(false);
+
+    // Emit a leave room event if needed
+    socket.emit("leaveRoom", roomCode);
+
+    // Reset room-related state
+    setRoomCode("");
+    setOpponentName("");
+    setIsCreator(false);
+  };
 
   const handleRematch = () => {
     // Reset game state for creator
@@ -59,12 +81,33 @@ const TicTacToeShift = ({isDark}) => {
     socket.emit("rematch", { room: roomCode });
   };
 
+  const handleNameSubmit = (e) => {
+    e.preventDefault();
+    if (name.trim()) {
+      setShowRoomControls(true);
+    }
+  };
+
   const handleLeaveRoom = () => {
     socket.emit("leaveRoom", roomCode);
+    // Reset all necessary state variables
     setRoomCode("");
     setOpponentName("");
-    setGameState("waiting");
+    setGameState("initial");
     setShowPopup(false);
+    setShowRoomControls(false); // Reset room controls visibility
+    setName(""); // Clear the name input
+    setRoom(""); // Clear the room input
+    // Reset game-related states
+    setBoard(Array(9).fill(null));
+    setCurrentPlayer("X");
+    setWinner(null);
+    setMoveCount(0);
+    setMyMoves([]);
+    setOpponentMoves([]);
+    setMyMoveCount(0);
+    setOpponentMoveCount(0);
+    setIsCreator(false);
   };
 
   const handleCreateRoom = () => {
@@ -417,34 +460,52 @@ const TicTacToeShift = ({isDark}) => {
     <div className="flex flex-col items-center justify-center min-h-screen -mt-[10vh] rounded-lg bg-gray-900 w-[70vw]">
       {gameState === "initial" && (
         <div className="space-y-4">
-          <input
-            type="text"
-            placeholder="Enter your name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="px-4 py-2 border rounded"
-          />
-          <div>
-            <button
-              onClick={createRoom}
-              className="px-4 py-2 bg-blue-500 text-white rounded mr-2"
-            >
-              Create Room
-            </button>
+          <form
+            onSubmit={handleNameSubmit}
+            className="flex flex-col items-center gap-4"
+          >
             <input
               type="text"
-              placeholder="Enter room code"
-              value={room}
-              onChange={(e) => setRoom(e.target.value)}
-              className="px-4 py-2 border rounded mr-2"
+              placeholder="Enter your name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="px-4 py-2 border rounded w-64 text-center"
             />
-            <button
-              onClick={joinRoom}
-              className="px-4 py-2 bg-green-500 text-white rounded"
-            >
-              Join Room
-            </button>
-          </div>
+            {!showRoomControls && (
+              <button
+                type="submit"
+                className="px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+              >
+                Enter
+              </button>
+            )}
+          </form>
+
+          {showRoomControls && (
+            <div className="flex flex-col items-center gap-4">
+              <button
+                onClick={createRoom}
+                className="px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors w-64"
+              >
+                Create Room
+              </button>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Enter room code"
+                  value={room}
+                  onChange={(e) => setRoom(e.target.value)}
+                  className="px-4 py-2 border rounded w-48"
+                />
+                <button
+                  onClick={joinRoom}
+                  className="px-6 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
+                >
+                  Join Room
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -534,6 +595,8 @@ const TicTacToeShift = ({isDark}) => {
           opponentMoves={myMoves}
           isCreator={isCreator}
           isDark={isDark}
+          winner={winner}
+          onBack={handleBack} // Add this line
         />
       )}
     </div>

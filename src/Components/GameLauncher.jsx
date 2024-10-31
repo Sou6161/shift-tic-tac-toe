@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import TicTacToeShift from "./TicTacToeShift";
 import SingleVsAi from "./SingleVsAi";
 import LoginButton from "./LoginButton";
-import { saveUserData, getUserData } from '../lib/database';
+import { saveUserData, getUserData } from "../lib/database";
 
 const GameLauncher = ({ isDark }) => {
   const [gameMode, setGameMode] = useState(null);
@@ -15,7 +15,6 @@ const GameLauncher = ({ isDark }) => {
     wins: 0,
     gamesPlayed: 0,
   });
-
 
   useEffect(() => {
     const checkInitialLoginStatus = () => {
@@ -38,13 +37,13 @@ const GameLauncher = ({ isDark }) => {
 
   const updatePlayerData = async (data) => {
     const userId = // get user ID from authentication
-    await saveUserData(userId, data);
+      await saveUserData(userId, data);
   };
 
   const handleGameEnd = (winner) => {
     const updatedData = {
       totalMoves: playerData.totalMoves + moveCount,
-      wins: winner === 'X' ? playerData.wins + 1 : playerData.wins,
+      wins: winner === "X" ? playerData.wins + 1 : playerData.wins,
       gamesPlayed: playerData.gamesPlayed + 1,
     };
     updatePlayerData(updatedData);
@@ -73,29 +72,41 @@ const GameLauncher = ({ isDark }) => {
   );
 
   return (
-    <div className={`flex flex-col items-center justify-center rounded-lg min-h-screen mt-7 
-      ${isDark ? 'bg-gradient-to-r from-gray-90 via-gray-700 to-gray-500' : 'bg-gradient-to-r from-cyan-400 via-purple-400 to-yellow-300'} 
-      filter`}>
+    <div
+      className={`flex flex-col items-center justify-center rounded-lg min-h-screen mt-7 
+      ${
+        isDark
+          ? "bg-gradient-to-r from-gray-90 via-gray-700 to-gray-500"
+          : "bg-gradient-to-r from-cyan-400 via-purple-400 to-yellow-300"
+      } 
+      filter`}
+    >
       {/* Login Button always visible at the top */}
       <div className="absolute top-2 right-4">
-      <LoginButton 
-          handleLogin={handleLogin} 
+        <LoginButton
+          handleLogin={handleLogin}
           isLoggedIn={isLoggedIn}
           onLoginSuccess={handleLoginSuccess}
         />
       </div>
-      
+
       {!showGameModes && (
         <div className="border-2 backdrop-blur-md p-20 rounded-lg bg-white/30">
           <div className="flex items-center mb-8">
-            <h1 className="text-4xl font-bold mb-4 text-white">
+            <h1
+              className={`text-4xl font-bold mb-4 text-transparent bg-clip-text ${
+                isDark
+                  ? "bg-gradient-to-b from-yellow-400 to-lime-500"
+                  : "bg-gradient-to-b from-black to-dark-blue-9 00 text-black"
+              }`}
+            >
               Tic Tac Toe Shift - Strategic Board Game
             </h1>
-            <div className="text-5xl font-bold ml-4 text-yellow-500">
+            <div className="text-[3.5vw] px-4  py-6 bg-gradient-to-r from-[#061161] to-[#780206]  border-2 rounded-full w-[8vw] h-[8vw] bg-slate-600 relative top-[12vh] font-bold ml-4 text-yellow-500">
               T<sup>3</sup>S
             </div>
           </div>
-          <p className="text-lg text-white mb-6 w-[30vw]">
+          <p className=" playwrite-gb-s-font1 text-lg text-white mb-6 -mt-10 w-[30vw]">
             Experience the classic game with a twist! Place your pieces, then
             shift them strategically. Challenge AI or play with friends in this
             exciting new take on Tic Tac Toe.
@@ -104,13 +115,13 @@ const GameLauncher = ({ isDark }) => {
             <button
               className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
               onClick={() => setShowGameModes(true)}
-            > 
+            >
               Play Now
             </button>
           </div>
         </div>
       )}
-      
+
       {showGameModes && !showPlayNow && (
         <div className="border-2 backdrop-blur-lg p-20 rounded-lg bg-white/30">
           <div className="flex space-x-4">
@@ -135,7 +146,7 @@ const GameLauncher = ({ isDark }) => {
           </div>
         </div>
       )}
-      
+
       {showPlayNow && (
         <div className="p-20 rounded-lg w-full border-2 backdrop-blur-lg bg-white/30">
           {gameMode === "single" && (

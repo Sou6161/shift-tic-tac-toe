@@ -166,28 +166,28 @@ const SingleVsAi = ({ difficulty }) => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 w-[70vw]">
-      <h2 className="text-2xl font-bold mb-4">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-800 w-[70vw]">
+      <h2 className="text-2xl font-bold mb-4 font-semibold text-purple-400">
         TicTacToe Shift (Single Player vs AI)
       </h2>
-      <p className="text-xl mb-4 ">
+      <p className="text-xl mb-4 text-white ">
         Difficulty: {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
       </p>
       {renderBoard()}
       {winner ? (
         <p className="mt-4 text-xl font-bold">{winner} wins!</p>
       ) : (
-        <div>
-          <p className="mt-4">Current player: {currentPlayer}</p>
-          <p>Moves: {moveCount}</p>
-          <p>Phase: {isPlacementPhase ? "Placement" : "Shifting"}</p>
+        <div className="ml-12">
+          <p className="mt-4 font-semibold text-green-400">Current player: {currentPlayer}</p>
+          <p className="font-semibold text-green-400">Moves: {moveCount}</p>
+          <p className="font-semibold text-green-400">Phase: {isPlacementPhase ? "Placement" : "Shifting"}</p>
           {aiThinking ? (
             <p className="mt-2 text-blue-600 font-semibold">
               AI is thinking...
             </p>
           ) : (
             currentPlayer === "X" && (
-              <p className="mt-2">
+              <p className="mt-2 font-semibold text-green-400">
                 {isPlacementPhase
                   ? "Your turn: Place a piece on an empty cell"
                   : selectedCell === null

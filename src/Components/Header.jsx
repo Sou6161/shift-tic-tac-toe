@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from "react";
 import bgVideo from "../Videos/TestBgVideo.mp4";
 import galaxyVideo from "../Videos/SolarSystemBgVideo.mp4";
+import PlacementPhaseVideo from "../Videos/PlacementPhaseVideo1.mp4";
+import ShiftingPhaseVideo from "../Videos/ShiftingPhaseVideo2 (2).mp4";
+import WinTheGame from "../Videos/WinTheGameVideo3.mp4";
 import TTTLogo from "../Images/TicTacToe shift logo.png";
 import { Link } from "react-router-dom";
 import { Moon, Sun } from "lucide-react";
@@ -112,48 +115,95 @@ const Header = () => {
             </div>
           </div>
 
-          <h2 className="text-4xl font-bold mx-auto text-center relative top-[5vh] text-yellow-400 dark:text-yellow-300 mb-[10vh] transition-colors duration-700 ease-in-out">
+          <h2 className="text-4xl font-bold mx-auto text-center relative top-[5vh] text-lime-500 dark:text-lime-500 mb-[10vh] transition-colors duration-700 ease-in-out">
             About Game
           </h2>
 
-          <p className=" playwrite-gb-s-font1  ml-[20vw] w-[50vw] mx-auto text-center text-[1.1vw] mb-[10vh] dark:text-gray-200 transition-colors duration-700 ease-in-out">
-            "Experience Tic Tac Toe like never before! Tic Tac Toe Shift combines
-            strategy and skill, challenging you to think ahead and outmaneuver.
-            Unlock your cognitive potential and reign supreme! Engage your mind
-            with addictive gameplay, Master the shift and claim your victory
-            today!"
+          <p
+            className={`playwrite-gb-s-font1 ml-[20vw] w-[50vw] mx-auto text-center text-[1.1vw] mb-[10vh] ${
+              isDark ? "dark:text-gray-200" : "-stone-700 text-black"
+            } transition-colors duration-700 ease-in-out`}
+          >
+            "Experience Tic Tac Toe like never before! Tic Tac Toe Shift
+            combines strategy and skill, challenging you to think ahead and
+            outmaneuver. Unlock your cognitive potential and reign supreme!
+            Engage your mind with addictive gameplay, Master the shift and claim
+            your victory today!"
           </p>
 
-          <h2 className="text-4xl font-bold text-center text-yellow-400 dark:text-yellow-300 mt-[10vh] mb-10 transition-colors duration-700 ease-in-out">
+          <h2 className="text-4xl font-bold text-center text-lime-500 dark:text-lime-500 mt-[10vh] mb-10 transition-colors duration-700 ease-in-out">
             How To Play
           </h2>
 
-          <div className="flex flex-col md:flex-row justify-between space-y-4 md:space-y-0 md:space-x-4">
-            {[1, 2, 3].map((box) => (
-              <div
-                key={box}
-                className="flex-1 h-[30vh] bg-white dark:bg-gray-800 bg-opacity-30 backdrop-filter backdrop-blur-lg p-6 rounded-xl border border-sky-200 dark:border-sky-700 transition-all duration-700 ease-in-out hover:shadow-lg"
-              >
-                <h2 className="text-xl font-bold mb-2 dark:text-white transition-colors duration-700 ease-in-out">
-                  Box {box}
+          <div className="container mx-auto px-4 py-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {/* Video Box 1 */}
+              <div className="flex flex-col">
+                <div className="relative h-60 bg-gray-800 rounded-xl overflow-hidden shadow-lg transition-transform duration-300 hover:scale-102">
+                  <video
+                    autoPlay
+                    muted
+                    loop
+                    className="absolute inset-0 w-full h-full object-contain"
+                    src={PlacementPhaseVideo}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black opacity-30"></div>
+                </div>
+                <h2 className="text-lg font-semibold text-center mt-4 text-purple-500">
+                  1. Placement Phase 👌 <br />
+                  (Place Your Pieces)
                 </h2>
-                <p className="dark:text-gray-300 transition-colors duration-700 ease-in-out">
-                  This is the content for Box {box}. You can add more details
-                  here.
-                </p>
               </div>
-            ))}
-          </div>
 
-          <h2 className="text-4xl font-bold text-center text-yellow-400 dark:text-yellow-300 mt-[10vh] mb-10 transition-colors duration-700 ease-in-out">
+              {/* Video Box 2 */}
+              <div className="flex flex-col">
+                <div className="relative h-60 bg-gray-800 rounded-xl overflow-hidden shadow-lg transition-transform duration-300 hover:scale-102">
+                  <video
+                    autoPlay
+                    muted
+                    loop
+                    className="absolute inset-0 w-full h-full object-contain"
+                    src={ShiftingPhaseVideo}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black opacity-30"></div>
+                </div>
+                <h2 className="text-lg font-semibold text-center mt-4 text-purple-500">
+                  2. Shifting Phase 🚢 <br />
+                  (Shift Your Pieces strategically)
+                </h2>
+              </div>
+
+              {/* Video Box 3 */}
+              <div className="flex flex-col">
+                <div className="relative h-60 bg-gray-800 rounded-xl overflow-hidden shadow-lg transition-transform duration-300 hover:scale-102">
+                  <video
+                    autoPlay
+                    muted
+                    loop
+                    className="absolute inset-0 w-full h-full object-contain"
+                    src={WinTheGame}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black opacity-30"></div>
+                </div>
+                <h2 className="text-lg font-semibold text-center mt-4 text-purple-500">
+                  3. Win The Game 🏆
+                </h2>
+              </div>
+            </div>
+          </div>
+          <h2 className="text-4xl font-bold text-center text-lime-500 dark:text-lime-500 mt-[10vh] mb-10 transition-colors duration-700 ease-in-out">
             Discussion
           </h2>
           <LockedDiscussionChat />
 
-          <h2 className="text-4xl font-bold text-left ml-5 text-yellow-400 dark:text-yellow-300 mt-[10vh] mb-10 transition-colors duration-700 ease-in-out">
+          <h2 className="text-4xl font-bold text-left ml-5 text-lime-500 dark:text-lime-500 mt-[10vh] mb-10 transition-colors duration-700 ease-in-out">
             About Developer
           </h2>
-          <p className=" dancing-script-cursive ml-5 dark:text-gray-200 transition-colors duration-700 ease-in-out">
+          <p
+            className={`dancing-script-cursive ml-5 ${
+              isDark ? "dark:text-gray-200" : " text-black"
+            } transition-colors duration-700 ease-in-out`}
+          >
             "Hi, I'm Sourabh, a frontend developer passionate about crafting
             interactive experiences. For Tic Tac Toe Shift, I learned and
             implemented Web Sockets from scratch, demonstrating my ability to
@@ -162,7 +212,13 @@ const Header = () => {
             development."
           </p>
 
-          <h1 className=" text-white ml-[35vw] text-[1  vw]  relative top-[8vh] mt-2 font-serif  ">ThankYou For HackaThon , Appwrite 🚀</h1>
+          <h1
+            className={`ml-[35vw] text-[1vw] relative top-[8vh] mt-2 font-serif ${
+              isDark ? "text-white" : " text-black"
+            } transition-colors duration-700 ease-in-out`}
+          >
+            ThankYou For HackaThon , Appwrite
+          </h1>
         </div>
       </div>
     </div>

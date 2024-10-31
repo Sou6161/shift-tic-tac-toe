@@ -351,12 +351,9 @@ body {
   text-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
 }
 
-/* @import url("https://fonts.googleapis.com/css2?family=Playwrite+GB+S:ital,wght@0,100..400;1,100..400&display=swap");
 
-body {
-  @apply font-playwrite;
-} */
 
+/* Header file Fonts  */
 
 .playwrite-gb-s-font1 {
   font-family: "Playwrite GB S", cursive;
