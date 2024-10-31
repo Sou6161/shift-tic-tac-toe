@@ -19,14 +19,14 @@ const GameLauncher = ({ isDark }) => {
   useEffect(() => {
     const checkInitialLoginStatus = () => {
       const loginStatus = localStorage.getItem("isLoggedIn") === "true";
-      console.log("Initial login status:", loginStatus); // Debug log
+      // console.log("Initial login status:", loginStatus); // Debug log
       setIsLoggedIn(loginStatus);
     };
     checkInitialLoginStatus();
   }, []);
 
   const handleLogin = (status) => {
-    console.log("Login status changed:", status); // Debug log
+    // console.log("Login status changed:", status); // Debug log
     setIsLoggedIn(status);
   };
 

@@ -94,7 +94,7 @@ const LoginButton = ({ handleLogin, onLoginSuccess }) => {
   };
 
   // Debug log for current state
-  console.log("Current login state:", isLoggedIn);
+  // console.log("Current login state:", isLoggedIn);
 
   const toggleSignIn = () => {
     setSignInView(true);
