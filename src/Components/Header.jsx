@@ -8,7 +8,7 @@ import TTTLogo from "../Images/TicTacToe shift logo.png";
 import { Link } from "react-router-dom";
 import { Moon, Sun } from "lucide-react";
 import GameLauncher from "./GameLauncher";
-import LockedDiscussionChat from "./LockedDiscussionChat";  
+import LockedDiscussionChat from "./LockedDiscussionChat";
 
 const Header = () => {
   const [isDark, setIsDark] = useState(() => {
@@ -85,15 +85,15 @@ const Header = () => {
 
       <div className="relative">
         <nav className="top-0 z-50 container mx-auto flex justify-between items-center px-2 bg-opacity-20 -mt-[5vh] rounded-full">
-          <div className="logo">
-            <Link to="/">
+          <div className="logo flex justify-center items-start w-full">
+            <Link to="https://shift-tic-tac-toe.vercel.app/">
               <img
-                className="w-[20vw] ml-[30vw] object-contain transition-transform duration-300 ease-in-out hover:scale-105"
+                className="w-[20vw] mx-auto text-center object-contain transition-transform duration-300 ease-in-out hover:scale-105"
                 src={TTTLogo}
                 alt=""
               />
             </Link>
-          </div>
+          </div>  
           <button
             onClick={handleThemeToggle}
             className="p-2 rounded-full bg-white shadow-lg transition-all duration-300 ease-in-out hover:scale-110 hover:shadow-xl active:scale-95 ml-auto mr-4"

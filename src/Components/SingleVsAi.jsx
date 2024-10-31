@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { getBestMove } from "./AI";
 
-const SingleVsAi = ({ difficulty }) => {
+const SingleVsAi = ({ difficulty, onBack, onReset }) => {
   const [board, setBoard] = useState(Array(9).fill(null));
   const [currentPlayer, setCurrentPlayer] = useState("X");
   const [winner, setWinner] = useState(null);
@@ -165,8 +165,23 @@ const SingleVsAi = ({ difficulty }) => {
     // if (moveCount === 9) setWinner("draw");
   };
 
+  const handleBackClick = () => {
+    // Call onBack to go back to game modes
+    onBack();
+    // Optionally, call onReset to reset the difficulty selection
+    if (onReset) {
+      onReset();
+    }
+  };
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-800 w-[70vw]">
+      <button
+        className="bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded absolute top-[10vh] left-[5vw]"
+        onClick={handleBackClick}
+      >
+        Back
+      </button>
       <h2 className="text-2xl font-bold mb-4 font-semibold text-purple-400">
         TicTacToe Shift (Single Player vs AI)
       </h2>
@@ -175,12 +190,18 @@ const SingleVsAi = ({ difficulty }) => {
       </p>
       {renderBoard()}
       {winner ? (
-        <p className="mt-4 text-xl font-bold">{winner} wins!</p>
+        <p className="mt-4 text-xl font-bold text-white ">
+          ({winner}) Player wins!
+        </p>
       ) : (
         <div className="ml-12">
-          <p className="mt-4 font-semibold text-green-400">Current player: {currentPlayer}</p>
+          <p className="mt-4 font-semibold text-green-400">
+            Current player: {currentPlayer}
+          </p>
           <p className="font-semibold text-green-400">Moves: {moveCount}</p>
-          <p className="font-semibold text-green-400">Phase: {isPlacementPhase ? "Placement" : "Shifting"}</p>
+          <p className="font-semibold text-green-400">
+            Phase: {isPlacementPhase ? "Placement" : "Shifting"}
+          </p>
           {aiThinking ? (
             <p className="mt-2 text-blue-600 font-semibold">
               AI is thinking...
@@ -202,4 +223,4 @@ const SingleVsAi = ({ difficulty }) => {
   );
 };
 
-export default SingleVsAi;
+export default SingleVsAi;  
