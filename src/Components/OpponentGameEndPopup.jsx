@@ -119,13 +119,13 @@ const OpponentGameEndPopup = ({
             ? "It's a Draw!"
             : winner === "opponent left"
             ? "Opponent Left the Game"
-            : `${winner} Wins!`}
+            : `(${winner}) Wins!`}
         </h2>
         <div className="ml-16">
           <LoginButton handleLogin={handleLogin} isDark={isDark} />
         </div>
         <div
-          className={`text-center my-4 ${
+          className={`text-center my-4 -mx-4 ${
             isDark ? "text-gray-400" : "text-gray-600"
           }`}
         >
