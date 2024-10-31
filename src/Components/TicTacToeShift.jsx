@@ -4,7 +4,7 @@
   import OpponentGameEndPopup from "./OpponentGameEndPopup";
   import { Copy } from "lucide-react";
 
-  const socket = io("http://localhost:8080",);
+  const socket = io("https://socketio-multiplayer-feature.onrender.com");
 
   const TicTacToeShift = ({ isDark }) => {
     const [name, setName] = useState("");
