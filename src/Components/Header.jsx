@@ -8,7 +8,7 @@ import TTTLogo from "../Images/TicTacToe shift logo.png";
 import { Link } from "react-router-dom";
 import { Moon, Sun } from "lucide-react";
 import GameLauncher from "./GameLauncher";
-import LockedDiscussionChat from "./LockedDiscussionChat";
+import LockedDiscussionChat from "./LockedDiscussionChat";  
 
 const Header = () => {
   const [isDark, setIsDark] = useState(() => {
