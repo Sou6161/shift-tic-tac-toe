@@ -557,7 +557,7 @@
 
         {gameState === "playing" && (
           <div className="text-center">
-            <h2 className="text-2xl font-bold mb-4">TicTacToe Shift</h2>
+            <h2 className="text-2xl font-bold mb-4 text-blue-500">TicTacToe Shift</h2>
             {renderBoard()}
             <div className="mt-4 space-y-2 text-white">
               <p>Your moves: {myMoveCount}</p>
@@ -576,7 +576,7 @@
               )}
               {winner ? (
                 <p className="text-4xl font-bold">
-                  {winner === "draw" ? "It's a draw!" : `${winner} wins!`}
+                  {winner === "draw" ? "It's a draw!" : `(${winner}) wins!`}
                 </p>
               ) : (
                 <div>

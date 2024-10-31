@@ -107,7 +107,7 @@ const OpponentGameEndPopup = ({
               : "bg-gray-200 hover:bg-gray-300 text-gray-800"
             } transition-colors duration-200`}
         >
-          ← Back
+          <span className="-mt-1">←</span> Back
         </button>
         
         <h2
