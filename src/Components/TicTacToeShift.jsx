@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import io from "socket.io-client";
 // import GameEndPopup from "./GameEndPopup";
 import OpponentGameEndPopup from "./OpponentGameEndPopup";
+import { Copy } from "lucide-react";
 
 const socket = io("http://localhost:8080");
 
@@ -512,8 +513,24 @@ const TicTacToeShift = ({ isDark }) => {
       {gameState === "waiting" && isCreator && (
         <div className="text-center text-white">
           <p>Waiting for opponent to join...</p>
-          <p>Room Code: {roomCode}</p>
-          <button onClick={handleLeaveRoom}>Leave Room</button>
+          <div className="flex items-center">
+            <p>Room Code: {roomCode}</p>
+            <button
+              className="ml-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold p-1 rounded"
+              onClick={() => {
+                navigator.clipboard.writeText(roomCode);
+                // alert("Copied to clipboard!");
+              }}
+            >
+              <Copy className="w-3 h-3" />
+            </button>
+          </div>
+          <button
+            className="bg-lime-400 p-2 rounded-lg text-black font-bold mt-5"
+            onClick={handleLeaveRoom}
+          >
+            Leave Room
+          </button>
         </div>
       )}
 
