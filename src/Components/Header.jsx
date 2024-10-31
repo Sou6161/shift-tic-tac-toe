@@ -4,7 +4,7 @@ import galaxyVideo from "../Videos/SolarSystemBgVideo.mp4";
 import PlacementPhaseVideo from "../Videos/PlacementPhaseVideo1.mp4";
 import ShiftingPhaseVideo from "../Videos/ShiftingPhaseVideo2 (2).mp4";
 import WinTheGame from "../Videos/WinTheGameVideo3.mp4";
-import TTTLogo from "../Images/TicTacToe shift logo.png";
+import TTTLogo from "../Images/TicTacToeshiftlogo.png";
 import { Link } from "react-router-dom";
 import { Moon, Sun } from "lucide-react";
 import GameLauncher from "./GameLauncher";
