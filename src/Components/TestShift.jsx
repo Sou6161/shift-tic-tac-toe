@@ -5,7 +5,7 @@ import { toast } from 'react-toastify';
 import 'tailwindcss/tailwind.css';
 import 'react-toastify/dist/ReactToastify.css';
 
-const socket = io('http://localhost:8080');
+const socket = io("https://socketio-multiplayer-feature.onrender.com");
 
 function TestShift() {
   const [username, setUsername] = useState('');

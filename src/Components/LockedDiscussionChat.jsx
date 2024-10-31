@@ -91,7 +91,7 @@ const LockedDiscussionChat = () => {
 
   useEffect(() => {
     if (isAuthenticated) {
-      socket.current = io("http://localhost:8080");
+      socket.current = io("https://socketio-multiplayer-feature.onrender.com");
 
       socket.current.emit("userJoined", {
         userId,
