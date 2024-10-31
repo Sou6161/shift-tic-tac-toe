@@ -5,7 +5,7 @@ import { toast } from 'react-toastify';
 import 'tailwindcss/tailwind.css';
 import 'react-toastify/dist/ReactToastify.css';
 
-const socket = io("http://localhost:5173", "https://shift-tic-tac-toe.vercel.app");
+const socket = io('http://localhost:8080');
 
 function TestShift() {
   const [username, setUsername] = useState('');

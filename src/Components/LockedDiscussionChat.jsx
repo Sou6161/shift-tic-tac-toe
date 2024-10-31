@@ -91,7 +91,7 @@ const LockedDiscussionChat = () => {
 
   useEffect(() => {
     if (isAuthenticated) {
-      socket.current = io("http://localhost:5173", "https://shift-tic-tac-toe.vercel.app");
+      socket.current = io("http://localhost:8080");
 
       socket.current.emit("userJoined", {
         userId,

@@ -4,7 +4,7 @@
   import OpponentGameEndPopup from "./OpponentGameEndPopup";
   import { Copy } from "lucide-react";
 
-  const socket = io("http://localhost:5173", "https://shift-tic-tac-toe.vercel.app");
+  const socket = io("http://localhost:8080",);
 
   const TicTacToeShift = ({ isDark }) => {
     const [name, setName] = useState("");
@@ -475,7 +475,7 @@
               {!showRoomControls && (
                 <button
                   type="submit"
-                  className="px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                  className="px-6 py-2  bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
                 >
                   Enter
                 </button>
