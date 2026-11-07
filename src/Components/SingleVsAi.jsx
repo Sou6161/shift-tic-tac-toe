@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
+import { ArrowLeft, RotateCcw } from "lucide-react";
 import { getBestMove } from "./AI";
+import Board, { Piece } from "./Board";
 
 const SingleVsAi = ({ difficulty, onBack, onReset }) => {
   const [board, setBoard] = useState(Array(9).fill(null));
@@ -117,29 +119,6 @@ const SingleVsAi = ({ difficulty, onBack, onReset }) => {
     }
   };
 
-  const renderBoard = () => {
-    return (
-      <div className="grid grid-cols-3 gap-2">
-        {board.map((cell, index) => (
-          <button
-            key={index}
-            className={`w-20 h-20 text-4xl font-bold ${
-              cell
-                ? cell === "X"
-                  ? "bg-blue-200"
-                  : "bg-red-200"
-                : "bg-gray-200"
-            } ${selectedCell === index ? "border-4 border-yellow-400" : ""}`}
-            onClick={() => handleCellClick(index)}
-            disabled={aiThinking}
-          >
-            {cell}
-          </button>
-        ))}
-      </div>
-    );
-  };
-
   useEffect(() => {
     checkWinner();
   }, [board]);
@@ -174,51 +153,103 @@ const SingleVsAi = ({ difficulty, onBack, onReset }) => {
     }
   };
 
+  const handleNewRound = () => {
+    setBoard(Array(9).fill(null));
+    setCurrentPlayer("X");
+    setWinner(null);
+    setMoveCount(0);
+    setSelectedCell(null);
+    setIsPlacementPhase(true);
+    setAiThinking(false);
+  };
+
+  const label = difficulty.charAt(0).toUpperCase() + difficulty.slice(1);
+  const placed = Math.min(moveCount, 6);
+
+  let message;
+  if (winner === "X") message = "You win. Nicely shifted.";
+  else if (winner) message = "The computer takes this one.";
+  else if (aiThinking) message = null;
+  else if (isPlacementPhase) message = "Your turn. Place a piece on any empty square.";
+  else if (selectedCell === null) message = "Your turn. Pick up one of your pieces.";
+  else message = "Now drop it on an empty square, or tap it again to put it back.";
+
+  const Seat = ({ who, piece, active, sub }) => (
+    <div
+      className={`flex items-center gap-3 rounded-2xl border-2 px-4 py-3 transition-colors ${
+        active ? "border-ink bg-card" : "border-transparent bg-sunk/60"
+      }`}
+    >
+      <span className="h-8 w-8 shrink-0">
+        <Piece value={piece} className="h-full w-full" animate={false} />
+      </span>
+      <div className="min-w-0">
+        <div className="text-[15px] font-semibold leading-tight">{who}</div>
+        <div className="text-[13px] text-muted">{sub}</div>
+      </div>
+      {active && !winner && <span className="ml-auto h-2 w-2 rounded-full bg-mustard" />}
+    </div>
+  );
+
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-800 w-[70vw]">
-      <button
-        className="bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded absolute top-[10vh] left-[5vw]"
-        onClick={handleBackClick}
-      >
-        Back
-      </button>
-      <h2 className="text-2xl font-bold mb-4 font-semibold text-purple-400">
-        TicTacToe Shift (Single Player vs AI)
-      </h2>
-      <p className="text-xl mb-4 text-white ">
-        Difficulty: {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
-      </p>
-      {renderBoard()}
-      {winner ? (
-        <p className="mt-4 text-xl font-bold text-white ">
-          ({winner}) Player wins!
-        </p>
-      ) : (
-        <div className="ml-12">
-          <p className="mt-4 font-semibold text-green-400">
-            Current player: {currentPlayer}
-          </p>
-          <p className="font-semibold text-green-400">Moves: {moveCount}</p>
-          <p className="font-semibold text-green-400">
-            Phase: {isPlacementPhase ? "Placement" : "Shifting"}
-          </p>
-          {aiThinking ? (
-            <p className="mt-2 text-blue-600 font-semibold">
-              AI is thinking...
-            </p>
-          ) : (
-            currentPlayer === "X" && (
-              <p className="mt-2 font-semibold text-green-400">
-                {isPlacementPhase
-                  ? "Your turn: Place a piece on an empty cell"
-                  : selectedCell === null
-                  ? "Your turn: Select a piece to move"
-                  : "Now select an empty space to move your piece"}
-              </p>
-            )
-          )}
+    <div>
+      <div className="mb-6 flex items-center justify-between gap-3">
+        <button className="btn-ghost -ml-2" onClick={handleBackClick}>
+          <ArrowLeft className="h-4 w-4" /> Leave
+        </button>
+        <span className="chip">
+          <span className="h-1.5 w-1.5 rounded-full bg-xred" /> vs computer · {label}
+        </span>
+      </div>
+
+      <div className="grid items-center gap-8 md:grid-cols-[1fr_300px] md:gap-12">
+        <div>
+          <Board
+            board={board}
+            onCellClick={handleCellClick}
+            selectedCell={selectedCell}
+            disabled={aiThinking || !!winner}
+            showTargets={!isPlacementPhase}
+          />
         </div>
-      )}
+
+        <aside className="space-y-3">
+          <Seat who="You" piece="X" active={currentPlayer === "X"} sub="Red, moves first" />
+          <Seat
+            who="Computer"
+            piece="O"
+            active={currentPlayer === "O"}
+            sub={aiThinking ? <span className="think">thinking<span>.</span><span>.</span><span>.</span></span> : `${label} difficulty`}
+          />
+
+          <div className="rounded-2xl border border-line p-4">
+            <div className="flex items-center justify-between">
+              <span className="eyebrow">{isPlacementPhase ? "Placing" : "Shifting"}</span>
+              <span className="font-mono text-[12px] text-muted">{placed}/6 placed</span>
+            </div>
+            <div className="mt-3 grid grid-cols-6 gap-1">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <span
+                  key={i}
+                  className={`h-1.5 rounded-full transition-colors duration-300 ${
+                    i < placed ? (i % 2 === 0 ? "bg-xred" : "bg-oteal") : "bg-line"
+                  }`}
+                />
+              ))}
+            </div>
+            {message && (
+              <p className={`mt-4 text-[15px] leading-snug ${winner ? "font-display text-[22px]" : ""}`}>
+                {message}
+              </p>
+            )}
+            {winner && (
+              <button className="btn-ink mt-4 w-full" onClick={handleNewRound}>
+                <RotateCcw className="h-4 w-4" /> Another round
+              </button>
+            )}
+          </div>
+        </aside>
+      </div>
     </div>
   );
 };

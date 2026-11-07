@@ -1,15 +1,20 @@
 import React, { useState, useEffect } from "react";
+import { ArrowLeft, ArrowRight, Cpu, Users } from "lucide-react";
 import TicTacToeShift from "./TicTacToeShift";
 import SingleVsAi from "./SingleVsAi";
-import LoginButton from "./LoginButton";
+import { XPiece, OPiece } from "./Board";
 import { saveUserData, getUserData } from "../lib/database";
+
+const difficulties = [
+  { id: "easy", label: "Easy", note: "Slips up about one move in three.", dots: 1 },
+  { id: "medium", label: "Medium", note: "Plays well and sometimes gets careless.", dots: 2 },
+  { id: "hard", label: "Hard", note: "Almost never misses a block.", dots: 3 },
+];
 
 const GameLauncher = ({ isDark }) => {
   const [gameMode, setGameMode] = useState(null);
   const [difficulty, setDifficulty] = useState(null);
-  const [showGameModes, setShowGameModes] = useState(false);
   const [showPlayNow, setShowPlayNow] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
   const [moveCount, setMoveCount] = useState(0);
   const [playerData, setPlayerData] = useState({
@@ -21,16 +26,12 @@ const GameLauncher = ({ isDark }) => {
   useEffect(() => {
     const checkInitialLoginStatus = async () => {
       const loginStatus = localStorage.getItem("isLoggedIn") === "true";
-      setIsLoggedIn(loginStatus);
-
       if (loginStatus) {
         try {
           const userId = localStorage.getItem("userId");
           if (userId) {
             const userData = await getUserData(userId);
-            if (userData) {
-              setPlayerData(userData);
-            }
+            if (userData) setPlayerData(userData);
           }
         } catch (error) {
           console.error("Error fetching user data:", error);
@@ -39,15 +40,6 @@ const GameLauncher = ({ isDark }) => {
     };
     checkInitialLoginStatus();
   }, []);
-
-  const handleLogin = (status) => {
-    setIsLoggedIn(status);
-  };
-
-  const handleLoginSuccess = () => {
-    console.log("Login success called");
-    setIsLoggedIn(true);
-  };
 
   const updatePlayerData = async (data) => {
     try {
@@ -73,166 +65,157 @@ const GameLauncher = ({ isDark }) => {
   };
 
   const handleBackFromGame = () => {
-    // Reset game mode and difficulty selection
     setGameMode(null);
     setDifficulty(null);
     setShowPlayNow(false);
-    setShowGameModes(false);
   };
 
+  const pick = (mode) => {
+    setGameMode(mode);
+    setShowPlayNow(true);
+  };
+
+  /* ---------- Step 1: choose who to play */
+  const renderModes = () => (
+    <div className="grid gap-4 md:grid-cols-2">
+      <button
+        onClick={() => pick("single")}
+        className="group relative overflow-hidden rounded-[24px] border-2 border-line bg-paper p-6 text-left transition-all duration-200 hover:-translate-y-1 hover:border-ink sm:p-8"
+      >
+        <div className="flex items-center justify-between">
+          <span className="grid h-11 w-11 place-items-center rounded-2xl bg-xred/10 text-xred">
+            <Cpu className="h-5 w-5" />
+          </span>
+          <XPiece className="h-16 w-16 rotate-6 text-xred/25 transition-transform duration-300 group-hover:rotate-12" animate={false} />
+        </div>
+        <h3 className="font-display mt-8 text-[28px] font-medium tracking-tight">Play the computer</h3>
+        <p className="mt-2 max-w-[36ch] text-[15px] leading-relaxed text-muted">
+          A good way to learn how shifting works. Pick how hard you want it to play.
+        </p>
+        <span className="mt-6 inline-flex items-center gap-1.5 text-[15px] font-semibold">
+          Choose difficulty
+          <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+        </span>
+      </button>
+
+      <button
+        onClick={() => pick("multi")}
+        className="group relative overflow-hidden rounded-[24px] border-2 border-ink bg-ink p-6 text-left text-paper transition-all dark:border-oteal/60 dark:bg-sunk dark:text-ink duration-200 hover:-translate-y-1 sm:p-8"
+      >
+        <div className="flex items-center justify-between">
+          <span className="grid h-11 w-11 place-items-center rounded-2xl bg-paper/10 text-mustard dark:bg-oteal/15">
+            <Users className="h-5 w-5" />
+          </span>
+          <OPiece className="h-16 w-16 -rotate-6 text-oteal/50 transition-transform duration-300 group-hover:-rotate-12" animate={false} />
+        </div>
+        <h3 className="font-display mt-8 text-[28px] font-medium tracking-tight">Play a friend</h3>
+        <p className="mt-2 max-w-[36ch] text-[15px] leading-relaxed text-paper/65 dark:text-muted">
+          Open a room, send the code, and play the same board live. 20 seconds per turn.
+        </p>
+        <span className="mt-6 inline-flex items-center gap-1.5 text-[15px] font-semibold text-mustard">
+          Open a room
+          <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+        </span>
+      </button>
+    </div>
+  );
+
+  /* ---------- Step 2 (vs computer): difficulty */
   const renderDifficultySelection = () => (
-    <div className="flex flex-col items-center">
-      <h2 className="text-2xl font-bold mb-4 text-white">Select Difficulty</h2>
-      <div className="flex space-x-4">
-        {["Easy", "Medium", "Hard"].map((level) => (
+    <div className="mx-auto max-w-3xl py-6 text-center">
+      <p className="eyebrow">Versus the computer</p>
+      <h3 className="font-display mt-2 text-[32px] font-medium tracking-tight">How tough should it be?</h3>
+      <div className="mt-8 grid gap-3 sm:grid-cols-3">
+        {difficulties.map((d) => (
           <button
-            key={level}
-            className="bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded"
+            key={d.id}
             onClick={() => {
-              setDifficulty(level.toLowerCase());
+              setDifficulty(d.id);
               setGameMode("single");
             }}
+            className="group rounded-[20px] border-2 border-line bg-paper p-5 text-left transition-all hover:-translate-y-1 hover:border-ink"
           >
-            {level}
+            <div className="flex gap-1">
+              {[1, 2, 3].map((n) => (
+                <span
+                  key={n}
+                  className={`h-2 w-5 rounded-full ${n <= d.dots ? "bg-xred" : "bg-line"}`}
+                />
+              ))}
+            </div>
+            <div className="font-display mt-4 text-[22px] font-medium">{d.label}</div>
+            <p className="mt-1 text-[14px] leading-snug text-muted">{d.note}</p>
           </button>
         ))}
       </div>
-      
     </div>
   );
 
   const renderGameEndPopup = () => (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white p-8 rounded-lg shadow-xl text-center">
-        <h2 className="text-2xl font-bold mb-4">Game Over</h2>
-        <div className="mb-4">
-          <p>Total Moves: {moveCount}</p>
-          <p>Total Games Played: {playerData.gamesPlayed}</p>
-          <p>Total Wins: {playerData.wins}</p>
-        </div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#1F1A14]/40 p-4 backdrop-blur-[2px]">
+      <div className="pop-in w-full max-w-sm rounded-[28px] border border-line bg-card p-8 text-center shadow-lift">
+        <h2 className="font-display text-[30px] font-medium">Good game.</h2>
+        <dl className="mt-6 grid grid-cols-3 gap-2 text-center">
+          {[
+            ["Moves", moveCount],
+            ["Played", playerData.gamesPlayed],
+            ["Wins", playerData.wins],
+          ].map(([k, v]) => (
+            <div key={k} className="rounded-2xl bg-sunk px-2 py-3">
+              <dd className="font-display text-[26px] font-medium">{v}</dd>
+              <dt className="eyebrow mt-1 !text-[10px]">{k}</dt>
+            </div>
+          ))}
+        </dl>
         <button
-          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+          className="btn-ink mt-6 w-full"
           onClick={() => {
             setShowPopup(false);
             handleBackFromGame();
           }}
         >
-          Close
+          Back to the table
         </button>
       </div>
     </div>
   );
 
-  return (
-    <div
-      className={`flex flex-col items-center justify-center rounded-lg min-h-screen mt-7 
-      ${
-        isDark
-          ? "bg-gradient-to-r from-gray-90 via-gray-700 to-gray-500"
-          : "bg-gradient-to-r from-cyan-400 via-purple-400 to-yellow-300"
-      } 
-      filter`}
-    >
-      {/* Login Button always visible at the top */}
-      <div className="absolute top-2 right-4">
-        <LoginButton
-          handleLogin={handleLogin}
-          isLoggedIn={isLoggedIn}
-          onLoginSuccess={handleLoginSuccess}
-        />
-      </div>
+  const inGame = showPlayNow && (gameMode === "multi" || difficulty);
 
+  return (
+    <div className="relative">
       {showPopup && renderGameEndPopup()}
 
-      {!showGameModes && (
-        <div className="border-2 backdrop-blur-md p-20 rounded-lg bg-white/30">
-          <div className="flex items-center mb-8">
-            <h1
-              className={`text-4xl font-bold mb-4 text-transparent bg-clip-text ${
-                isDark
-                  ? "bg-gradient-to-b from-yellow-400 to-lime-500"
-                  : "bg-gradient-to-b from-black to-dark-blue-900 text-black"
-              }`}
-            >
-              Tic Tac Toe Shift - Strategic Board Game
-            </h1>
-            <div className="text-[3.5vw] px-4 py-6 bg-gradient-to-r from-[#061161] to-[#780206] border-2 rounded-full w-[8vw] h-[8vw] bg-slate-600 relative top-[12vh] font-bold ml-4 text-yellow-500">
-              T<sup>3</sup>S
-            </div>
-          </div>
-          <p className="playwrite-gb-s-font1 text-lg text-white mb-6 -mt-10 w-[30vw]">
-            Experience the classic game with a twist! Place your pieces, then
-            shift them strategically. Challenge AI or play with friends in this
-            exciting new take on Tic Tac Toe.
-          </p>
-          <div className="">
-            <button
-              className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
-              onClick={() => setShowGameModes(true)}
-            >
-              Play Now
-            </button>
-          </div>
-        </div>
+      {showPlayNow && !inGame && (
+        <button onClick={handleBackFromGame} className="btn-ghost -ml-2 mb-2">
+          <ArrowLeft className="h-4 w-4" /> Back
+        </button>
       )}
 
-      {showGameModes && !showPlayNow && (
-        <div className="border-2 backdrop-blur-lg p-20 rounded-lg bg-white/30">
-          <div className="flex space-x-4">
-            <button
-              className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 ml-[1vw] rounded"
-              onClick={() => {
-                setGameMode("single");
-                setShowPlayNow(true);
-              }}
-            >
-              Single Player (vs AI)
-            </button>
-            <button
-              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-              onClick={() => {
-                setGameMode("multi");
-                setShowPlayNow(true);
-              }}
-            >
-              Multiplayer (with Friend)
-            </button>
-            <button
-              className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded absolute -top-[37vh] -left-[23vw]"
-              onClick={() => setShowGameModes(false)}
-            >
-              Back
-            </button>
-          </div>
-        </div>
+      {!showPlayNow && renderModes()}
+
+      {showPlayNow && gameMode === "single" && (
+        <>
+          {difficulty ? (
+            <SingleVsAi
+              difficulty={difficulty}
+              onBack={handleBackFromGame}
+              onGameEnd={handleGameEnd}
+              setMoveCount={setMoveCount}
+            />
+          ) : (
+            renderDifficultySelection()
+          )}
+        </>
       )}
 
-      {showPlayNow && (
-        <div className="p-20 rounded-lg w-full border-2 backdrop-blur-lg bg-white/30">
-          {gameMode === "single" && (
-            <div className="">
-              {difficulty && (
-                <SingleVsAi 
-                  difficulty={difficulty} 
-                  onBack={handleBackFromGame}
-                  onGameEnd={handleGameEnd}
-                  setMoveCount={setMoveCount}
-                />
-              )}
-              {!difficulty && renderDifficultySelection()}
-            </div>
-          )}
-          {gameMode === "multi" && (
-            <div className="mt-20">
-              <TicTacToeShift 
-                isDark={isDark} 
-                onBack={handleBackFromGame}
-                onGameEnd={handleGameEnd}
-                setMoveCount={setMoveCount}
-              />
-            </div>
-          )}
-        </div>
+      {showPlayNow && gameMode === "multi" && (
+        <TicTacToeShift
+          isDark={isDark}
+          onBack={handleBackFromGame}
+          onGameEnd={handleGameEnd}
+          setMoveCount={setMoveCount}
+        />
       )}
     </div>
   );

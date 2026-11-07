@@ -2,11 +2,13 @@
   import io from "socket.io-client";
   // import GameEndPopup from "./GameEndPopup";
   import OpponentGameEndPopup from "./OpponentGameEndPopup";
-  import { Copy } from "lucide-react";
+  import { Copy, Check, ArrowLeft, ArrowRight } from "lucide-react";
+  import Board, { Piece } from "./Board";
 
   const socket = io("https://socketio-multiplayer-feature.onrender.com");
 
-  const TicTacToeShift = ({ isDark }) => {
+  const TicTacToeShift = ({ isDark, onBack }) => {
+    const [copied, setCopied] = useState(false);
     const [name, setName] = useState("");
     const [room, setRoom] = useState("");
     const [gameState, setGameState] = useState("initial");
@@ -435,74 +437,88 @@
       }
     };
 
-    const renderBoard = () => {
-      return (
-        <div className="grid grid-cols-3 gap-2">
-          {board.map((cell, index) => (
-            <button
-              key={index}
-              className={`w-20 h-20 text-4xl font-bold ${
-                cell
-                  ? cell === "X"
-                    ? "bg-blue-200"
-                    : "bg-red-200"
-                  : "bg-gray-200"
-              } ${selectedCell === index ? "border-4 border-yellow-400" : ""}`}
-              onClick={() => handleCellClick(index)}
-            >
-              {cell}
-            </button>
-          ))}
-        </div>
-      );
+    const copyCode = () => {
+      navigator.clipboard?.writeText(roomCode);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1600);
     };
 
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen -mt-[10vh] rounded-lg bg-gray-900 w-[70vw]">
-        {gameState === "initial" && (
-          <div className="space-y-4">
-            <form
-              onSubmit={handleNameSubmit}
-              className="flex flex-col items-center gap-4"
-            >
-              <input
-                type="text"
-                placeholder="Enter your name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="px-4 py-2 border rounded w-64 text-center"
-              />
-              {!showRoomControls && (
-                <button
-                  type="submit"
-                  className="px-6 py-2  bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-                >
-                  Enter
-                </button>
-              )}
-            </form>
+    const renderRoomCode = () => (
+      <button
+        onClick={copyCode}
+        className="group mx-auto mt-5 flex items-center gap-3 rounded-2xl border-2 border-dashed border-ink/40 bg-paper px-5 py-3 transition-colors hover:border-ink"
+        title="Copy room code"
+      >
+        <span className="font-mono text-[26px] font-medium tracking-[0.18em]">{roomCode}</span>
+        {copied ? <Check className="h-4 w-4 text-oteal" /> : <Copy className="h-4 w-4 text-muted group-hover:text-ink" />}
+      </button>
+    );
 
-            {showRoomControls && (
-              <div className="flex flex-col items-center gap-4">
-                <button
-                  onClick={createRoom}
-                  className="px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors w-64"
-                >
-                  Create Room
+    const panelCls = "pop-in mx-auto max-w-md py-8 text-center";
+
+    const myPiece = isCreator ? "X" : "O";
+    const theirPiece = isCreator ? "O" : "X";
+    const lastMoves = myMoves.slice(-4);
+
+    let status;
+    if (winner) {
+      status = winner === "draw" ? "A draw. Rare in this game!" : winner === myPiece ? "You win!" : `${opponentName || "Your opponent"} wins.`;
+    } else if (!isMyTurn) {
+      status = `${opponentName || "Opponent"} is thinking…`;
+    } else if (moveCount < 6) {
+      status = "Your turn. Place a piece.";
+    } else {
+      status = selectedCell === null ? "Your turn. Pick up a piece to shift." : "Now drop it on an empty square.";
+    }
+
+    return (
+      <div>
+        {gameState === "initial" && (
+          <div className={panelCls}>
+            {onBack && (
+              <button onClick={onBack} className="btn-ghost -mt-4 mb-4">
+                <ArrowLeft className="h-4 w-4" /> Back
+              </button>
+            )}
+            <p className="eyebrow">Play a friend</p>
+            <h3 className="font-display mt-2 text-[32px] font-medium tracking-tight">
+              {showRoomControls ? `Hi ${name}. Host or join?` : "What should we call you?"}
+            </h3>
+
+            {!showRoomControls ? (
+              <form onSubmit={handleNameSubmit} className="mt-8 flex flex-col gap-3 sm:flex-row">
+                <input
+                  type="text"
+                  placeholder="Your name"
+                  aria-label="Your name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="field text-center sm:text-left"
+                  autoFocus
+                />
+                <button type="submit" className="btn-ink shrink-0" disabled={!name.trim()}>
+                  Continue <ArrowRight className="h-4 w-4" />
                 </button>
+              </form>
+            ) : (
+              <div className="mt-8 space-y-5 text-left">
+                <button onClick={createRoom} className="btn-ink w-full">
+                  Create a room
+                </button>
+                <div className="flex items-center gap-3 text-[13px] text-muted">
+                  <span className="h-px flex-1 bg-line" /> or join one <span className="h-px flex-1 bg-line" />
+                </div>
                 <div className="flex gap-2">
                   <input
                     type="text"
-                    placeholder="Enter room code"
+                    placeholder="Room code"
+                    aria-label="Room code"
                     value={room}
                     onChange={(e) => setRoom(e.target.value)}
-                    className="px-4 py-2 border rounded w-48"
+                    className="field font-mono tracking-widest"
                   />
-                  <button
-                    onClick={joinRoom}
-                    className="px-6 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
-                  >
-                    Join Room
+                  <button onClick={joinRoom} className="btn-line shrink-0" disabled={!room.trim()}>
+                    Join
                   </button>
                 </div>
               </div>
@@ -511,97 +527,117 @@
         )}
 
         {gameState === "waiting" && isCreator && (
-          <div className="text-center text-white">
-            <p>Waiting for opponent to join...</p>
-            <div className="flex items-center">
-              <p>Room Code: {roomCode}</p>
-              <button
-                className="ml-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold p-1 rounded"
-                onClick={() => {
-                  navigator.clipboard.writeText(roomCode);
-                  // alert("Copied to clipboard!");
-                }}
-              >
-                <Copy className="w-3 h-3" />
-              </button>
-            </div>
-            <button
-              className="bg-lime-400 p-2 rounded-lg text-black font-bold mt-5"
-              onClick={handleLeaveRoom}
-            >
-              Leave Room
+          <div className={panelCls}>
+            <p className="eyebrow">Room open</p>
+            <h3 className="font-display mt-2 text-[30px] font-medium tracking-tight">Send this to your friend</h3>
+            {renderRoomCode()}
+            <p className="mt-6 flex items-center justify-center gap-2 text-[15px] text-muted">
+              <span className="think">
+                <span>●</span>
+                <span>●</span>
+                <span>●</span>
+              </span>
+              Waiting for them to join
+            </p>
+            <button className="btn-ghost mt-6" onClick={handleLeaveRoom}>
+              Close room
             </button>
           </div>
         )}
 
         {gameState === "waiting" && !isCreator && (
-          <div className="text-center text-white">
-            <p>Waiting for the game to start...</p>
-            <p>Room Code: {roomCode}</p>
-            <p>Opponent: {opponentName}</p>
+          <div className={panelCls}>
+            <p className="eyebrow">Room {roomCode}</p>
+            <h3 className="font-display mt-2 text-[30px] font-medium tracking-tight">You're in.</h3>
+            <p className="mt-3 text-[15px] text-muted">
+              Waiting for {opponentName || "the host"} to start the game.
+            </p>
           </div>
         )}
 
         {gameState === "ready" && isCreator && (
-          <div className="text-center text-white">
-            <p>Opponent {opponentName} has joined the room!</p>
-            <p>Room Code: {roomCode}</p>
-            <button
-              onClick={startGame}
-              className="px-4 py-2 bg-yellow-500 text-white rounded mt-4"
-            >
-              Start Game
+          <div className={panelCls}>
+            <p className="eyebrow">Room {roomCode}</p>
+            <h3 className="font-display mt-2 text-[30px] font-medium tracking-tight">
+              {opponentName} sat down.
+            </h3>
+            <p className="mt-3 text-[15px] text-muted">You're red and you move first.</p>
+            <button onClick={startGame} className="btn-ink mt-8">
+              Start the game <ArrowRight className="h-4 w-4" />
             </button>
           </div>
         )}
 
         {gameState === "playing" && (
-          <div className="text-center">
-            <h2 className="text-2xl font-bold mb-4 text-blue-500">TicTacToe Shift</h2>
-            {renderBoard()}
-            <div className="mt-4 space-y-2 text-white">
-              <p>Your moves: {myMoveCount}</p>
-              {myMoves.length > 0 && (
-                <div className="mt-2">
-                  <h3>Your Move History:</h3>
-                  <ul>
-                    {myMoves.map((move, index) => (
-                      <li key={index}>
-                        Move {index + 1}: Position
-                        {move.move.length > 1 ? "s" : ""} {move.move.join(" → ")}
+          <div className="grid items-center gap-8 md:grid-cols-[1fr_300px] md:gap-12">
+            <Board
+              board={board}
+              onCellClick={handleCellClick}
+              selectedCell={selectedCell}
+              disabled={!!winner || !isMyTurn}
+              showTargets={moveCount >= 6}
+            />
+
+            <aside className="space-y-3">
+              {[
+                { who: `${name || "You"} (you)`, piece: myPiece, active: isMyTurn },
+                { who: opponentName || "Opponent", piece: theirPiece, active: !isMyTurn },
+              ].map((p) => (
+                <div
+                  key={p.piece}
+                  className={`flex items-center gap-3 rounded-2xl border-2 px-4 py-3 ${
+                    p.active && !winner ? "border-ink bg-card" : "border-transparent bg-sunk/60"
+                  }`}
+                >
+                  <span className="h-8 w-8 shrink-0">
+                    <Piece value={p.piece} className="h-full w-full" animate={false} />
+                  </span>
+                  <span className="truncate text-[15px] font-semibold">{p.who}</span>
+                  {p.active && !winner && (
+                    <span className="ml-auto font-mono text-[13px] tabular-nums text-muted">
+                      {isMyTurn && p.active ? `${timer}s` : "…"}
+                    </span>
+                  )}
+                </div>
+              ))}
+
+              <div className="rounded-2xl border border-line p-4">
+                <div className="flex items-center justify-between">
+                  <span className="eyebrow">{moveCount < 6 ? "Placing" : "Shifting"}</span>
+                  <span className="font-mono text-[12px] text-muted">your moves: {myMoveCount}</span>
+                </div>
+                {isMyTurn && !winner && (
+                  <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-line">
+                    <div
+                      className={`h-full rounded-full transition-all duration-1000 ease-linear ${timer <= 5 ? "bg-xred" : "bg-mustard"}`}
+                      style={{ width: `${(timer / 20) * 100}%` }}
+                    />
+                  </div>
+                )}
+                <p className={`mt-4 leading-snug ${winner ? "font-display text-[22px]" : "text-[15px]"}`}>{status}</p>
+
+                {lastMoves.length > 0 && (
+                  <ul className="mt-4 space-y-1 border-t border-line pt-3 font-mono text-[12px] text-muted">
+                    {lastMoves.map((move, i) => (
+                      <li key={i}>
+                        {myMoves.length - lastMoves.length + i + 1}.{" "}
+                        {move.move.length > 1 ? `shift ${move.move[0] + 1} → ${move.move[1] + 1}` : `place ${move.move[0] + 1}`}
                       </li>
                     ))}
                   </ul>
-                </div>
-              )}
-              {winner ? (
-                <p className="text-4xl font-bold">
-                  {winner === "draw" ? "It's a draw!" : `(${winner}) wins!`}
-                </p>
-              ) : (
-                <div>
-                  <p>Current player: {currentPlayer}</p>
-                  <p>Timer: {isMyTurn ? timer : "-"} seconds</p>
-                  {moveCount >= 6 && (
-                    <p>
-                      {isMyTurn
-                        ? selectedCell === null
-                          ? "Your turn: Select a piece to move"
-                          : "Now select an empty space to move your piece"
-                        : `Waiting for ${opponentName}'s move`}
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            </aside>
           </div>
         )}
 
         {gameState === "abandoned" && (
-          <div>
-            <h2>Game Abandoned!</h2>
-            <h2>{winner}</h2>
-            <button onClick={handleCreateRoom}>Create New Room</button>
+          <div className={panelCls}>
+            <h3 className="font-display text-[30px] font-medium tracking-tight">Your opponent left.</h3>
+            <p className="mt-3 text-[15px] text-muted">No harm done. Open a new room whenever you're ready.</p>
+            <button className="btn-ink mt-8" onClick={handleCreateRoom}>
+              Open a new room
+            </button>
           </div>
         )}
 
@@ -613,7 +649,8 @@
             isCreator={isCreator}
             isDark={isDark}
             winner={winner}
-            onBack={handleBack} // Add this line
+            myPiece={myPiece}
+            onBack={handleBack}
           />
         )}
       </div>

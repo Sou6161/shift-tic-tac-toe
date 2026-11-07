@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { ArrowLeft, RotateCcw } from "lucide-react";
 import LoginButton from "./LoginButton";
 
 const OpponentGameEndPopup = ({
@@ -8,6 +9,7 @@ const OpponentGameEndPopup = ({
   isCreator,
   isDark,
   winner,
+  myPiece,
   onBack // New prop for handling back navigation
 }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -35,104 +37,67 @@ const OpponentGameEndPopup = ({
     }
   }, []);
 
-  const renderMoves = () => (
-    <div>
-      <h2
-        className={`font-bold mb-2 ${
-          isDark ? "text-gray-200" : "text-gray-800"
-        }`}
-      >
-        Your Moves:
-      </h2>
-      <ul className={isDark ? "text-gray-300" : "text-gray-600"}>
-        {opponentMoves.map((move, index) => (
-          <li key={index}>
-            Move {index + 1}: Position{move.move.length > 1 ? "s" : ""}{" "}
-            {move.move.join(" → ")}
-          </li>
-        ))}
-      </ul>
-      <div
-        className={`text-md mt-4 ${isDark ? "text-gray-400" : "text-gray-700"}`}
-      >
-        You played {opponentMoves.length} moves
-      </div>
-      <div
-        className={`text-md mt-2 ${isDark ? "text-gray-400" : "text-gray-700"}`}
-      >
-        Your score: {playerData.wins} wins / {playerData.gamesPlayed} games
-        played
-      </div>
-    </div>
-  );
-
-  const renderRematchButton = () => {
-    if (isCreator) {
-      return (
-        <button
-          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-4 mb-4 w-full"
-          onClick={() => {
-            handleRematch();
-            setShowPopup(false);
-          }}
-        >
-          Rematch
-        </button>
-      );
-    }
-    return (
-      <div
-        className={`text-center mt-4 mb-4 ${
-          isDark ? "text-gray-400" : "text-gray-700"
-        }`}
-      >
-        Waiting for room creator to start rematch...
-      </div>
-    );
-  };
+  const won = winner && winner === myPiece;
+  const title =
+    winner === "draw"
+      ? "A draw."
+      : winner === "opponent left"
+      ? "Your opponent left."
+      : won
+      ? "You won it."
+      : `${winner} takes the round.`;
 
   return (
-    <div className="fixed top-0 left-0 w-full h-full bg-gray-500 bg-opacity-50 flex justify-center items-center">
-      <div
-        className={`p-6 rounded-lg shadow-md w-96 mt-10 relative ${
-          isDark ? "bg-gray-800 border border-gray-700" : "bg-white"
-        }`}
-      > 
-        {/* Back Button */}
-        <button
-          onClick={onBack}
-          className={`absolute top-2 left-2 px-4 py-2 rounded-lg
-            ${isDark 
-              ? "bg-gray-700 hover:bg-gray-600 text-gray-200" 
-              : "bg-gray-200 hover:bg-gray-300 text-gray-800"
-            } transition-colors duration-200`}
-        >
-          <span className="-mt-1">←</span> Back
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#1F1A14]/40 p-4 backdrop-blur-[2px] sm:items-center">
+      <div className="pop-in relative w-full max-w-[420px] rounded-[28px] border border-line bg-card p-7 text-ink shadow-lift">
+        <button onClick={onBack} className="btn-ghost -ml-2 -mt-2">
+          <ArrowLeft className="h-4 w-4" /> Leave table
         </button>
-        
-        <h2
-          className={`text-[1.7vw] ml-[6vw] font-bold mb-4 ${
-            isDark ? "text-gray-200" : "text-gray-800"
-          }`}
-        >
-          {winner === "draw"
-            ? "It's a Draw!"
-            : winner === "opponent left"
-            ? "Opponent Left the Game"
-            : `(${winner}) Wins!`}
+
+        <h2 className="font-display mt-4 text-[34px] font-medium leading-tight tracking-tight">
+          {title}
         </h2>
-        <div className="ml-16">
-          <LoginButton handleLogin={handleLogin} isDark={isDark} />
-        </div>
-        <div
-          className={`text-center my-4 -mx-4 ${
-            isDark ? "text-gray-400" : "text-gray-600"
-          }`}
-        >
-          OR
-        </div>
-        {renderRematchButton()}
-        {renderMoves()}
+        <p className="mt-2 text-[15px] text-muted">
+          You made {opponentMoves.length} {opponentMoves.length === 1 ? "move" : "moves"}. Record: {playerData.wins} wins from{" "}
+          {playerData.gamesPlayed} {playerData.gamesPlayed === 1 ? "game" : "games"}.
+        </p>
+
+        {isCreator ? (
+          <button
+            className="btn-ink mt-6 w-full"
+            onClick={() => {
+              handleRematch();
+              setShowPopup(false);
+            }}
+          >
+            <RotateCcw className="h-4 w-4" /> Rematch
+          </button>
+        ) : (
+          <p className="mt-6 rounded-2xl bg-sunk px-4 py-3 text-center text-[14px] text-muted">
+            Waiting for the host to call a rematch…
+          </p>
+        )}
+
+        {!isLoggedIn && (
+          <div className="mt-5 flex items-center justify-between gap-3 border-t border-line pt-5">
+            <span className="text-[14px] text-muted">Sign in to keep your record.</span>
+            <LoginButton handleLogin={handleLogin} compact />
+          </div>
+        )}
+
+        {opponentMoves.length > 0 && (
+          <details className="mt-5 border-t border-line pt-4">
+            <summary className="cursor-pointer text-[14px] font-medium text-muted hover:text-ink">Your moves</summary>
+            <ol className="mt-3 max-h-40 space-y-1 overflow-y-auto font-mono text-[12px] text-muted">
+              {opponentMoves.map((move, index) => (
+                <li key={index}>
+                  {index + 1}.{" "}
+                  {move.move.length > 1 ? `shift ${move.move[0] + 1} → ${move.move[1] + 1}` : `place ${move.move[0] + 1}`}
+                </li>
+              ))}
+            </ol>
+          </details>
+        )}
       </div>
     </div>
   );

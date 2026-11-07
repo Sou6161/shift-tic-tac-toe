@@ -236,295 +236,224 @@ const handleDislike = (messageId) => {
   }
 };
 
-  const LockedState = () => (
-    <div className="flex flex-col items-center justify-center h-full bg-gray-100 bg-opacity-90 rounded-xl p-8">
-      <Lock className="w-16 h-16 text-gray-400 mb-4" />
-      <h2 className="text-xl font-bold text-gray-700 mb-4">
-        Discussion Chat Locked
-      </h2>
-      <p className="text-gray-600 mb-6 text-center">
-        Please sign in or sign up to participate in the discussion
-      </p>
-    </div>
-  );
-
   const formatDate = (timestamp) => {
-    return new Date(timestamp).toLocaleString();
+    const d = new Date(timestamp);
+    const diff = (Date.now() - d.getTime()) / 1000;
+    if (diff < 60) return "just now";
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+    return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
   };
 
+  const avatarTone = (name = "") => {
+    const tones = ["bg-xred/15 text-xred", "bg-oteal/15 text-oteal", "bg-mustard/25 text-ink"];
+    let h = 0;
+    for (const ch of name) h = (h + ch.charCodeAt(0)) % tones.length;
+    return tones[h];
+  };
+
+  const Avatar = ({ name, small }) => (
+    <span
+      className={`grid shrink-0 place-items-center rounded-full font-display font-semibold ${avatarTone(name)} ${
+        small ? "h-7 w-7 text-[13px]" : "h-10 w-10 text-[16px]"
+      }`}
+    >
+      {(name || "?").charAt(0).toUpperCase()}
+    </span>
+  );
+
+  const iconBtn = "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[13px] font-medium transition-colors";
+
+  if (!isAuthenticated) {
+    return (
+      <div className="flex min-h-[280px] flex-col items-start justify-center rounded-[28px] border-2 border-dashed border-line bg-card/60 p-8 sm:p-10">
+        <span className="grid h-12 w-12 place-items-center rounded-2xl bg-sunk text-muted">
+          <Lock className="h-5 w-5" />
+        </span>
+        <h3 className="font-display mt-5 text-[26px] font-medium tracking-tight">Members only, for now.</h3>
+        <p className="mt-2 max-w-sm text-[15px] leading-relaxed text-muted">
+          Sign in from the top right to read and post. It keeps the spam out.
+        </p>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col md:flex-row justify-between space-y-4 md:space-y-0 md:space-x-4">
-      <div className="flex-1 h-[84vh] bg-gray-100 bg-opacity-30 backdrop-filter backdrop-blur-lg p-4 rounded-xl border border-sky-200 overflow-y-auto">
-        {!isAuthenticated ? (
-          <LockedState />
-        ) : (
-          <div className="container mx-auto">
-            <div className="rounded-lg shadow-md p-4 mb-6">
-              <div className="flex items-center mb-4">
-                <h2 className="text-2xl font-bold text-gray-700">
-                  Discussion Chat
-                </h2>
-                <p className="ml-4 text-gray-500">
-                  ({comments.length} comments)
-                </p>
-              </div>
+    <div className="rounded-[28px] border border-line bg-card shadow-lift">
+      <div className="flex items-center justify-between border-b border-line px-5 py-4 sm:px-6">
+        <h3 className="font-display text-[20px] font-medium">Recent posts</h3>
+        <span className="font-mono text-[12px] text-muted">
+          {comments.length} {comments.length === 1 ? "post" : "posts"}
+        </span>
+      </div>
 
-              <div className="space-y-4">
-                {comments.map((comment) => (
-                  <div
-                    key={comment.id}
-                    className="bg-white rounded-lg shadow p-4"
+      <div className="max-h-[520px] space-y-1 overflow-y-auto px-3 py-3 sm:px-4" data-lenis-prevent>
+        {comments.length === 0 && (
+          <p className="px-3 py-10 text-center text-[15px] text-muted">Quiet table. Be the first to say something.</p>
+        )}
+        {comments.map((comment) => (
+          <article key={comment.id} className="rounded-2xl px-3 py-4 transition-colors hover:bg-sunk/40">
+            <div className="flex items-start gap-3">
+              <Avatar name={comment.username} />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <h4 className="truncate text-[15px] font-semibold">{comment.username}</h4>
+                  <span className="text-[13px] text-muted">{formatDate(comment.timestamp)}</span>
+                  {comment.userId === userId && (
+                    <button
+                      onClick={() => handleDeleteComment(comment.id)}
+                      className="ml-auto rounded-full p-1.5 text-muted hover:bg-xred/10 hover:text-xred"
+                      aria-label="Delete post"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+                <p className="mt-1 whitespace-pre-wrap break-words text-[15px] leading-relaxed">{comment.message}</p>
+
+                <div className="-ml-2.5 mt-2 flex items-center gap-1">
+                  <button
+                    onClick={() => handleLike(comment.id)}
+                    className={`${iconBtn} ${userLikes.has(comment.id) ? "bg-oteal/15 text-oteal" : "text-muted hover:bg-ink/5 hover:text-ink"}`}
                   >
-                    <div className="flex items-start">
-                      <img
-                        src="https://simg.nicepng.com/png/small/122-1228864_bronson-xerri-player-profile-silhouette.png"
-                        alt="avatar"
-                        className="w-10 h-10 rounded-full mr-3"
-                      />
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between mb-1">
-                          <div className="flex items-center">
-                            <h3 className="font-bold text-gray-800">
-                              {comment.username}
-                            </h3>
-                            <span className="ml-2 text-sm text-gray-500">
-                              {formatDate(comment.timestamp)}
-                            </span>
-                          </div>
-                          {comment.userId === userId && (
-                            <button
-                              onClick={() => handleDeleteComment(comment.id)}
-                              className="text-red-500 hover:text-red-700"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          )}
-                        </div>
-                        <p className="text-gray-700 mb-2">{comment.message}</p>
+                    <ThumbsUp className="h-3.5 w-3.5" />
+                    {comment.likes || 0}
+                  </button>
+                  <button
+                    onClick={() => handleDislike(comment.id)}
+                    className={`${iconBtn} ${userDislikes.has(comment.id) ? "bg-xred/15 text-xred" : "text-muted hover:bg-ink/5 hover:text-ink"}`}
+                  >
+                    <ThumbsDown className="h-3.5 w-3.5" />
+                    {comment.dislikes || 0}
+                  </button>
+                  <button
+                    onClick={() => setShowReply((prev) => ({ ...prev, [comment.id]: !prev[comment.id] }))}
+                    className={`${iconBtn} text-muted hover:bg-ink/5 hover:text-ink`}
+                  >
+                    <CornerUpRight className="h-3.5 w-3.5" />
+                    Reply
+                  </button>
+                </div>
 
-                        <div className="flex items-center space-x-4">
-                          <button
-                            onClick={() => handleLike(comment.id)}
-                            className={`flex items-center ${
-                              userLikes.has(comment.id)
-                                ? "text-blue-500"
-                                : "text-gray-500 hover:text-blue-500"
-                            }`}
-                          >
-                            <ThumbsUp className="w-4 h-4 mr-1" />
-                            <span>{comment.likes || 0}</span>
-                          </button>
-                          <button
-                            onClick={() => handleDislike(comment.id)}
-                            className={`flex items-center ${
-                              userDislikes.has(comment.id)
-                                ? "text-red-500"
-                                : "text-gray-500 hover:text-red-500"
-                            }`}
-                          >
-                            <ThumbsDown className="w-4 h-4 mr-1" />
-                            <span>{comment.dislikes || 0}</span>
-                          </button>
-                          <button
-                            onClick={() =>
-                              setShowReply((prev) => ({
-                                ...prev,
-                                [comment.id]: !prev[comment.id],
-                              }))
-                            }
-                            className="flex items-center text-gray-500 hover:text-blue-500"
-                          >
-                            <CornerUpRight className="w-4 h-4 mr-1" />
-                            <span>Reply</span>
-                          </button>
-                        </div>
+                {showReply[comment.id] && (
+                  <form onSubmit={(e) => handleReplySubmit(e, comment.id)} className="mt-3 space-y-2">
+                    <input
+                      type="text"
+                      placeholder="Your name"
+                      aria-label="Your name"
+                      className="field py-2.5"
+                      value={replyComment.id === comment.id ? replyComment.name : ""}
+                      onChange={(e) => setReplyComment({ ...replyComment, name: e.target.value, id: comment.id })}
+                    />
+                    <textarea
+                      className="field resize-none py-2.5"
+                      rows="2"
+                      placeholder="Write a reply…"
+                      aria-label="Reply"
+                      value={replyComment.id === comment.id ? replyComment.reply : ""}
+                      onChange={(e) => setReplyComment({ ...replyComment, reply: e.target.value, id: comment.id })}
+                    />
+                    {error && <p className="text-[13px] text-xred">{error}</p>}
+                    <button type="submit" className="btn-ink !px-4 !py-2 text-[14px]">
+                      Post reply
+                    </button>
+                  </form>
+                )}
 
-                        {showReply[comment.id] && (
-                          <form
-                            onSubmit={(e) => handleReplySubmit(e, comment.id)}
-                            className="mt-3 space-y-3"
-                          >
-                            <input
-                              type="text"
-                              placeholder="Your name"
-                              className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                              value={
-                                replyComment.id === comment.id
-                                  ? replyComment.name
-                                  : ""
-                              }
-                              onChange={(e) =>
-                                setReplyComment({
-                                  ...replyComment,
-                                  name: e.target.value,
-                                  id: comment.id,
-                                })
-                              }
-                            />
-                            <textarea
-                              className="w-full p-2 border rounded-lg resize-none focus:ring-2 focus:ring-blue-500"
-                              rows="2"
-                              placeholder="Write a reply..."
-                              value={
-                                replyComment.id === comment.id
-                                  ? replyComment.reply
-                                  : ""
-                              }
-                              onChange={(e) =>
-                                setReplyComment({
-                                  ...replyComment,
-                                  reply: e.target.value,
-                                  id: comment.id,
-                                })
-                              }
-                            />
-                            {error && (
-                              <p className="text-red-500 text-sm">{error}</p>
-                            )}
-                            <button
-                              type="submit"
-                              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
-                            >
-                              Post Reply
-                            </button>
-                          </form>
-                        )}
-
-                        {comment.replies && comment.replies.length > 0 && (
-                          <div className="ml-8 mt-4 space-y-3">
-                            {getRepliestoShow(comment.replies, comment.id).map(
-                              (reply) => (
-                                <div
-                                  key={reply.id}
-                                  className="bg-gray-50 rounded-lg p-3"
-                                >
-                                  <div className="flex items-center justify-between mb-1">
-                                    <div className="flex items-center">
-                                      <h4 className="font-bold text-gray-800">
-                                        {reply.username}
-                                      </h4>
-                                      <span className="ml-2 text-sm text-gray-500">
-                                        {formatDate(reply.timestamp)}
-                                      </span>
-                                    </div>
-                                    {reply.userId === userId && (
-                                      <button
-                                        onClick={() =>
-                                          handleDeleteReply(
-                                            comment.id,
-                                            reply.id
-                                          )
-                                        }
-                                        className="text-red-500 hover:text-red-700"
-                                      >
-                                        <Trash2 className="w-4 h-4" />
-                                      </button>
-                                    )}
-                                  </div>
-                                  <p className="text-gray-700">{reply.reply}</p>
-                                </div>
-                              )
-                            )}
-
-                            {comment.replies.length > INITIAL_REPLIES_SHOWN && (
+                {comment.replies && comment.replies.length > 0 && (
+                  <div className="mt-3 space-y-3 border-l-2 border-line pl-4">
+                    {getRepliestoShow(comment.replies, comment.id).map((reply) => (
+                      <div key={reply.id} className="flex items-start gap-2.5">
+                        <Avatar name={reply.username} small />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <h5 className="truncate text-[14px] font-semibold">{reply.username}</h5>
+                            <span className="text-[12px] text-muted">{formatDate(reply.timestamp)}</span>
+                            {reply.userId === userId && (
                               <button
-                                onClick={() =>
-                                  toggleRepliesExpansion(comment.id)
-                                }
-                                className="flex items-center text-blue-500 hover:text-blue-700 mt-2 text-sm font-medium"
+                                onClick={() => handleDeleteReply(comment.id, reply.id)}
+                                className="ml-auto rounded-full p-1 text-muted hover:bg-xred/10 hover:text-xred"
+                                aria-label="Delete reply"
                               >
-                                {expandedReplies[comment.id] ? (
-                                  <>
-                                    <ChevronUp className="w-4 h-4 mr-1" />
-                                    Show less replies
-                                  </>
-                                ) : (
-                                  <>
-                                    <ChevronDown className="w-4 h-4 mr-1" />
-                                    View{" "}
-                                    {comment.replies.length -
-                                      INITIAL_REPLIES_SHOWN}{" "}
-                                    more{" "}
-                                    {comment.replies.length -
-                                      INITIAL_REPLIES_SHOWN ===
-                                    1
-                                      ? "reply"
-                                      : "replies"}
-                                  </>
-                                )}
+                                <Trash2 className="h-3.5 w-3.5" />
                               </button>
                             )}
                           </div>
-                        )}
+                          <p className="mt-0.5 break-words text-[14px] leading-relaxed">{reply.reply}</p>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                    ))}
 
-              <div className="mt-6 bg-white rounded-lg shadow p-4">
-                <h3 className="text-xl font-bold text-gray-700 mb-4">
-                  Leave a Comment
-                </h3>
-                <form onSubmit={handleCommentSubmit}>
-                  <div className="space-y-4">
-                    <input
-                      type="text"
-                      placeholder="Name"
-                      className="w-full p-2 border rounded-lg"
-                      value={newComment.name}
-                      onChange={(e) =>
-                        setNewComment({ ...newComment, name: e.target.value })
-                      }
-                    />
-                    <input
-                      type="email"
-                      placeholder="Email"
-                      className="w-full p-2 border rounded-lg"
-                      value={newComment.email}
-                      onChange={(e) =>
-                        setNewComment({ ...newComment, email: e.target.value })
-                      }
-                    />
-                    <textarea
-                      placeholder="Your comment"
-                      className="w-full p-2 border rounded-lg resize-none"
-                      rows="4"
-                      value={newComment.comment}
-                      onChange={(e) =>
-                        setNewComment({
-                          ...newComment,
-                          comment: e.target.value,
-                        })
-                      }
-                    />
-                    <div className="flex items-center">
-                      <input
-                        type="checkbox"
-                        id="terms"
-                        checked={checked}
-                        onChange={() => setChecked(!checked)}
-                        className="mr-2"
-                      />
-                      <label htmlFor="terms" className="text-gray-600">
-                        I agree to the terms and conditions
-                      </label>
-                    </div>
-                    {error && <p className="text-red-500 text-sm">{error}</p>}
-                    <button
-                      type="submit"
-                      className="w-full py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
-                      disabled={!checked || !newComment.comment.trim()}
-                    >
-                      Post Comment
-                    </button>
+                    {comment.replies.length > INITIAL_REPLIES_SHOWN && (
+                      <button
+                        onClick={() => toggleRepliesExpansion(comment.id)}
+                        className="flex items-center gap-1 text-[13px] font-semibold text-muted hover:text-ink"
+                      >
+                        {expandedReplies[comment.id] ? (
+                          <>
+                            <ChevronUp className="h-4 w-4" /> Hide replies
+                          </>
+                        ) : (
+                          <>
+                            <ChevronDown className="h-4 w-4" />
+                            {comment.replies.length - INITIAL_REPLIES_SHOWN}{" "}
+                            {comment.replies.length - INITIAL_REPLIES_SHOWN === 1 ? "reply" : "replies"}
+                          </>
+                        )}
+                      </button>
+                    )}
                   </div>
-                </form>
+                )}
               </div>
             </div>
-          </div>
-        )}
+          </article>
+        ))}
       </div>
+
+      <form onSubmit={handleCommentSubmit} className="space-y-3 border-t border-line p-5 sm:p-6">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <input
+            type="text"
+            placeholder={username ? `Name (default: ${username})` : "Name"}
+            aria-label="Name"
+            className="field"
+            value={newComment.name}
+            onChange={(e) => setNewComment({ ...newComment, name: e.target.value })}
+          />
+          <input
+            type="email"
+            placeholder="Email (not shown)"
+            aria-label="Email"
+            className="field"
+            value={newComment.email}
+            onChange={(e) => setNewComment({ ...newComment, email: e.target.value })}
+          />
+        </div>
+        <textarea
+          placeholder="Say something to the table…"
+          aria-label="Your post"
+          className="field resize-none"
+          rows="3"
+          value={newComment.comment}
+          onChange={(e) => setNewComment({ ...newComment, comment: e.target.value })}
+        />
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <label htmlFor="terms" className="flex cursor-pointer items-center gap-2 text-[14px] text-muted">
+            <input
+              type="checkbox"
+              id="terms"
+              checked={checked}
+              onChange={() => setChecked(!checked)}
+              className="h-4 w-4 rounded accent-[rgb(var(--ink))]"
+            />
+            I'll keep it friendly
+          </label>
+          <button type="submit" className="btn-ink" disabled={!checked || !newComment.comment.trim()}>
+            Post
+          </button>
+        </div>
+        {error && <p className="text-[13px] text-xred">{error}</p>}
+      </form>
     </div>
   );
 };
