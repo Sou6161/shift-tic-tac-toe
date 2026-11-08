@@ -1,0 +1,25 @@
+{
+  "name": "shift-server",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "main": "src/index.js",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch --env-file-if-exists=.env src/index.js",
+    "migrate": "node --env-file-if-exists=.env src/migrate.js",
+    "test": "node --env-file-if-exists=.env --test \"test/*.test.js\""
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.1",
+    "pg": "^8.13.1",
+    "socket.io": "^4.8.0"
+  },
+  "devDependencies": {
+    "socket.io-client": "^4.8.4"
+  }
+}

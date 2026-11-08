@@ -1,9 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { X as Close, LogOut } from "lucide-react";
-import { signIn, signUp, signOut, checkSession } from "../lib/auth";
+import { useAuthStore } from "../store/authStore";
 
-const LoginButton = ({ handleLogin = () => {}, onLoginSuccess, compact = false }) => {
+const LoginButton = ({ onLoginSuccess, compact = false }) => {
+  const user = useAuthStore((s) => s.user);
+  const signIn = useAuthStore((s) => s.signIn);
+  const signUp = useAuthStore((s) => s.signUp);
+  const signOut = useAuthStore((s) => s.signOut);
+
   const [showForm, setShowForm] = useState(false);
   const [signInView, setSignInView] = useState(true);
   const [email, setEmail] = useState("");
@@ -12,30 +17,6 @@ const LoginButton = ({ handleLogin = () => {}, onLoginSuccess, compact = false }
   const [name, setName] = useState("");
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [username, setUsername] = useState("");
-
-  const checkLoginStatus = async () => {
-    try {
-      const session = await checkSession();
-      const loginStatus = !!session;
-      setIsLoggedIn(loginStatus);
-      setUsername(localStorage.getItem("username") || "");
-      handleLogin(loginStatus);
-    } catch (error) {
-      console.error("Session check error:", error);
-      setIsLoggedIn(false);
-      handleLogin(false);
-    }
-  };
-
-  useEffect(() => {
-    checkLoginStatus();
-    const handleAuthChange = () => checkLoginStatus();
-    window.addEventListener("authStateChanged", handleAuthChange);
-    return () => window.removeEventListener("authStateChanged", handleAuthChange);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   useEffect(() => {
     if (!showForm) return;
@@ -44,13 +25,12 @@ const LoginButton = ({ handleLogin = () => {}, onLoginSuccess, compact = false }
     return () => window.removeEventListener("keydown", onKey);
   }, [showForm]);
 
-  const finishAuth = async () => {
-    setIsLoggedIn(true);
-    handleLogin(true);
+  const finishAuth = () => {
     if (onLoginSuccess) onLoginSuccess();
     setShowForm(false);
     setError(null);
-    await checkLoginStatus();
+    setPassword("");
+    setConfirmPassword("");
   };
 
   const handleSubmitSignUp = async (e) => {
@@ -59,12 +39,15 @@ const LoginButton = ({ handleLogin = () => {}, onLoginSuccess, compact = false }
       setError("Those passwords don't match.");
       return;
     }
+    if (password.length < 8) {
+      setError("Use a password of at least 8 characters.");
+      return;
+    }
     setBusy(true);
     try {
-      await signUp(email, password, name);
-      await finishAuth();
+      await signUp(name, email, password);
+      finishAuth();
     } catch (error) {
-      console.error("Sign up error:", error);
       setError(error.message);
     } finally {
       setBusy(false);
@@ -76,25 +59,17 @@ const LoginButton = ({ handleLogin = () => {}, onLoginSuccess, compact = false }
     setBusy(true);
     try {
       await signIn(email, password);
-      await finishAuth();
+      finishAuth();
     } catch (error) {
-      console.error("Sign in error:", error);
       setError(error.message);
     } finally {
       setBusy(false);
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await signOut();
-      setIsLoggedIn(false);
-      handleLogin(false);
-      setShowForm(false);
-      await checkLoginStatus();
-    } catch (error) {
-      console.error("Logout error:", error);
-    }
+  const handleLogout = () => {
+    setShowForm(false);
+    signOut();
   };
 
   const switchView = (toSignIn) => {
@@ -102,11 +77,16 @@ const LoginButton = ({ handleLogin = () => {}, onLoginSuccess, compact = false }
     setError(null);
   };
 
-  if (isLoggedIn) {
+  if (user) {
+    const username = user.name;
+    const { wins, gamesPlayed } = user.stats;
     return (
       <div className="flex items-center gap-2">
-        {!compact && username && (
-          <span className="hidden items-center gap-2 text-[14px] font-medium text-muted sm:inline-flex">
+        {!compact && (
+          <span
+            className="hidden items-center gap-2 text-[14px] font-medium text-muted sm:inline-flex"
+            title={`${wins} ${wins === 1 ? "win" : "wins"} from ${gamesPlayed} ${gamesPlayed === 1 ? "game" : "games"}`}
+          >
             <span className="grid h-7 w-7 place-items-center rounded-full bg-mustard font-display text-[14px] font-semibold text-[#1F1A14]">
               {username.charAt(0).toUpperCase()}
             </span>
@@ -181,7 +161,7 @@ const LoginButton = ({ handleLogin = () => {}, onLoginSuccess, compact = false }
               <input
                 type="password"
                 className="field"
-                placeholder="Password"
+                placeholder={signInView ? "Password" : "Password (8+ characters)"}
                 aria-label="Password"
                 autoComplete={signInView ? "current-password" : "new-password"}
                 value={password}

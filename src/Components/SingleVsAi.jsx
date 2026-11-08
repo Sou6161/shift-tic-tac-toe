@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { ArrowLeft, RotateCcw } from "lucide-react";
 import { getBestMove } from "./AI";
 import Board, { Piece } from "./Board";
+import { useAuthStore } from "../store/authStore";
 
 const SingleVsAi = ({ difficulty, onBack, onReset }) => {
   const [board, setBoard] = useState(Array(9).fill(null));
@@ -11,6 +12,24 @@ const SingleVsAi = ({ difficulty, onBack, onReset }) => {
   const [selectedCell, setSelectedCell] = useState(null);
   const [isPlacementPhase, setIsPlacementPhase] = useState(true);
   const [aiThinking, setAiThinking] = useState(false);
+  const [playerMoves, setPlayerMoves] = useState(0);
+  // "idle" | "saving" | "saved" | "error" | "guest"
+  const [saveState, setSaveState] = useState("idle");
+  const recorded = useRef(false);
+  const signedIn = useAuthStore((s) => Boolean(s.user));
+  const recordAiGame = useAuthStore((s) => s.recordAiGame);
+
+  // Save the finished game to the player's record (once per round).
+  useEffect(() => {
+    if (!winner || recorded.current) return;
+    recorded.current = true;
+    if (!signedIn) return setSaveState("guest");
+    setSaveState("saving");
+    recordAiGame({ winner, moves: playerMoves, difficulty })
+      .then(() => setSaveState("saved"))
+      .catch(() => setSaveState("error"));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [winner]);
 
   useEffect(() => {
     if (currentPlayer === "O" && !winner) {
@@ -24,7 +43,6 @@ const SingleVsAi = ({ difficulty, onBack, onReset }) => {
   }, [currentPlayer, winner]);
 
   const makeAiMove = () => {
-    console.log("Making AI move");
     const bestMove = getBestMove(board, "O", isPlacementPhase, moveCount);
 
     // Implement mistake-making based on difficulty
@@ -33,7 +51,6 @@ const SingleVsAi = ({ difficulty, onBack, onReset }) => {
       finalMove = getRandomMove();
     }
 
-    console.log("AI move:", finalMove);
     if (finalMove) {
       const newBoard = [...board];
       if (finalMove.from !== null) {
@@ -89,6 +106,7 @@ const SingleVsAi = ({ difficulty, onBack, onReset }) => {
         const newBoard = [...board];
         newBoard[index] = "X";
         setBoard(newBoard);
+        setPlayerMoves((n) => n + 1);
         setCurrentPlayer("O");
         setMoveCount((prev) => prev + 1);
         if (moveCount + 1 >= 6) {
@@ -107,6 +125,7 @@ const SingleVsAi = ({ difficulty, onBack, onReset }) => {
             newBoard[index] = newBoard[selectedCell];
             newBoard[selectedCell] = null;
             setBoard(newBoard);
+            setPlayerMoves((n) => n + 1);
             setSelectedCell(null);
             setCurrentPlayer("O");
           } else {
@@ -161,6 +180,9 @@ const SingleVsAi = ({ difficulty, onBack, onReset }) => {
     setSelectedCell(null);
     setIsPlacementPhase(true);
     setAiThinking(false);
+    setPlayerMoves(0);
+    setSaveState("idle");
+    recorded.current = false;
   };
 
   const label = difficulty.charAt(0).toUpperCase() + difficulty.slice(1);
@@ -240,6 +262,14 @@ const SingleVsAi = ({ difficulty, onBack, onReset }) => {
             {message && (
               <p className={`mt-4 text-[15px] leading-snug ${winner ? "font-display text-[22px]" : ""}`}>
                 {message}
+              </p>
+            )}
+            {winner && saveState !== "idle" && (
+              <p className="mt-2 text-[13px] text-muted">
+                {saveState === "saving" && "Saving to your record…"}
+                {saveState === "saved" && "Saved to your record."}
+                {saveState === "error" && "Couldn't save this one. Check your connection."}
+                {saveState === "guest" && "Sign in to keep a record of your wins."}
               </p>
             )}
             {winner && (

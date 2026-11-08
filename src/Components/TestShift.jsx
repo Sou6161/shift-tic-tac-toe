@@ -1,11 +1,12 @@
 // code
 import React, { useState, useEffect } from 'react';
 import io from 'socket.io-client';
+import { SOCKET_URL } from "../lib/api";
 import { toast } from 'react-toastify';
 import 'tailwindcss/tailwind.css';
 import 'react-toastify/dist/ReactToastify.css';
 
-const socket = io("https://socketio-multiplayer-feature.onrender.com");
+const socket = io(SOCKET_URL);
 
 function TestShift() {
   const [username, setUsername] = useState('');

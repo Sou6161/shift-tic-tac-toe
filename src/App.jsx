@@ -1,26 +1,16 @@
-import React from "react";
-import { useLenis } from "@studio-freight/react-lenis";
+import React, { useEffect } from "react";
 import Header from "./Components/Header";
-
-
+import { useAuthStore } from "./store/authStore";
 
 const App = () => {
+  const checkSession = useAuthStore((s) => s.checkSession);
 
-  function SomeComponent() {
-    useLenis(({ scroll }) => {
-      // console.log("Scrolled", scroll);
-    });
-  
-    // Rest of your component code hello i am surabh sain
-  }
-  SomeComponent()
-  
-  return (
-    <div>
-      <div><Header/></div>
-      
-    </div>
-  );
+  // Restore a saved sign-in once on load.
+  useEffect(() => {
+    checkSession();
+  }, [checkSession]);
+
+  return <Header />;
 };
 
 export default App;

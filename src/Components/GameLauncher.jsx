@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { ArrowLeft, ArrowRight, Cpu, Users } from "lucide-react";
 import TicTacToeShift from "./TicTacToeShift";
 import SingleVsAi from "./SingleVsAi";
 import { XPiece, OPiece } from "./Board";
-import { saveUserData, getUserData } from "../lib/database";
 
 const difficulties = [
   { id: "easy", label: "Easy", note: "Slips up about one move in three.", dots: 1 },
@@ -15,55 +14,6 @@ const GameLauncher = ({ isDark }) => {
   const [gameMode, setGameMode] = useState(null);
   const [difficulty, setDifficulty] = useState(null);
   const [showPlayNow, setShowPlayNow] = useState(false);
-  const [showPopup, setShowPopup] = useState(false);
-  const [moveCount, setMoveCount] = useState(0);
-  const [playerData, setPlayerData] = useState({
-    totalMoves: 0,
-    wins: 0,
-    gamesPlayed: 0,
-  });
-
-  useEffect(() => {
-    const checkInitialLoginStatus = async () => {
-      const loginStatus = localStorage.getItem("isLoggedIn") === "true";
-      if (loginStatus) {
-        try {
-          const userId = localStorage.getItem("userId");
-          if (userId) {
-            const userData = await getUserData(userId);
-            if (userData) setPlayerData(userData);
-          }
-        } catch (error) {
-          console.error("Error fetching user data:", error);
-        }
-      }
-    };
-    checkInitialLoginStatus();
-  }, []);
-
-  const updatePlayerData = async (data) => {
-    try {
-      const userId = localStorage.getItem("userId");
-      if (userId) {
-        await saveUserData(userId, data);
-        setPlayerData(data);
-      }
-    } catch (error) {
-      console.error("Error updating player data:", error);
-    }
-  };
-
-  const handleGameEnd = (winner) => {
-    const updatedData = {
-      totalMoves: playerData.totalMoves + moveCount,
-      wins: winner === "X" ? playerData.wins + 1 : playerData.wins,
-      gamesPlayed: playerData.gamesPlayed + 1,
-    };
-    updatePlayerData(updatedData);
-    setShowPopup(true);
-    setMoveCount(0);
-  };
-
   const handleBackFromGame = () => {
     setGameMode(null);
     setDifficulty(null);
@@ -151,41 +101,10 @@ const GameLauncher = ({ isDark }) => {
     </div>
   );
 
-  const renderGameEndPopup = () => (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#1F1A14]/40 p-4 backdrop-blur-[2px]">
-      <div className="pop-in w-full max-w-sm rounded-[28px] border border-line bg-card p-8 text-center shadow-lift">
-        <h2 className="font-display text-[30px] font-medium">Good game.</h2>
-        <dl className="mt-6 grid grid-cols-3 gap-2 text-center">
-          {[
-            ["Moves", moveCount],
-            ["Played", playerData.gamesPlayed],
-            ["Wins", playerData.wins],
-          ].map(([k, v]) => (
-            <div key={k} className="rounded-2xl bg-sunk px-2 py-3">
-              <dd className="font-display text-[26px] font-medium">{v}</dd>
-              <dt className="eyebrow mt-1 !text-[10px]">{k}</dt>
-            </div>
-          ))}
-        </dl>
-        <button
-          className="btn-ink mt-6 w-full"
-          onClick={() => {
-            setShowPopup(false);
-            handleBackFromGame();
-          }}
-        >
-          Back to the table
-        </button>
-      </div>
-    </div>
-  );
-
   const inGame = showPlayNow && (gameMode === "multi" || difficulty);
 
   return (
     <div className="relative">
-      {showPopup && renderGameEndPopup()}
-
       {showPlayNow && !inGame && (
         <button onClick={handleBackFromGame} className="btn-ghost -ml-2 mb-2">
           <ArrowLeft className="h-4 w-4" /> Back
@@ -200,8 +119,6 @@ const GameLauncher = ({ isDark }) => {
             <SingleVsAi
               difficulty={difficulty}
               onBack={handleBackFromGame}
-              onGameEnd={handleGameEnd}
-              setMoveCount={setMoveCount}
             />
           ) : (
             renderDifficultySelection()
@@ -213,8 +130,6 @@ const GameLauncher = ({ isDark }) => {
         <TicTacToeShift
           isDark={isDark}
           onBack={handleBackFromGame}
-          onGameEnd={handleGameEnd}
-          setMoveCount={setMoveCount}
         />
       )}
     </div>

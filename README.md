@@ -27,7 +27,9 @@ Play the game at: [Shift TicTacToe](https://shift-tic-tac-toe.vercel.app/)
 - **Framer Motion** - Animation library
 - **Lenis** - Smooth scroll library
 - **Vite** - Next generation frontend tooling
-- **Appwrite** - Backend as a Service platform
+- **Zustand** - Sign-in state shared across the app
+- **Node.js + Express** - REST API for accounts and game results (`server/`)
+- **PostgreSQL** - Accounts, stats, game history and the discussion board (Neon in production)
 
 ## 🎯 Game Rules
 
@@ -40,38 +42,61 @@ Play the game at: [Shift TicTacToe](https://shift-tic-tac-toe.vercel.app/)
 
 ### Prerequisites
 
-- Node.js (version 14 or higher)
-- npm or yarn
-- Appwrite instance (for backend)
+- Node.js 20 or newer
+- PostgreSQL running locally (e.g. `brew install postgresql@17`)
 
-### Installation
+### Run it locally
 
-1. Clone the repository
-```bash
-git clone https://github.com/Sou6161/shift-tictactoe.git
-```
-
-2. Navigate to the project directory
-```bash
-cd shift-tictactoe
-```
-
-3. Install dependencies
+1. Install dependencies for the site and the server
 ```bash
 npm install
-# or
-yarn install
+cd server && npm install && cd ..
 ```
 
-5. Start the development server
+2. Create the local database and the server's env file
+```bash
+createdb shift_dev
+cp server/.env.example server/.env
+```
+
+3. Start the backend (port 4000). It creates its tables on first start.
+```bash
+cd server && npm run dev
+```
+
+4. In a second terminal, start the site
 ```bash
 npm run dev
-# or
-yarn dev
 ```
 
-6. Open your browser and visit `http://localhost:5173`
+5. Open `http://localhost:5173`. Vite forwards `/api` and `/socket.io` to the backend, so no CORS setup is needed locally.
 
+### Backend tests
+
+```bash
+createdb shift_test   # once
+cd server && npm test
+```
+
+The tests wipe and rebuild the `shift_test` database (or `TEST_DATABASE_URL`), never the one in `.env`.
+
+## ☁️ Deployment
+
+| Part | Where | Notes |
+| --- | --- | --- |
+| Site | Vercel | Set `VITE_API_URL` to the Render URL |
+| Backend (`server/`) | Render web service | `render.yaml` describes it |
+| Database | Neon | Connection string goes in Render's `DATABASE_URL` |
+
+**Backend env vars on Render**
+
+| Name | Value |
+| --- | --- |
+| `DATABASE_URL` | Neon connection string, including `?sslmode=require` |
+| `CLIENT_ORIGINS` | `https://shift-tic-tac-toe.vercel.app,http://localhost:5173` |
+| `NODE_ENV` | `production` |
+
+The server applies database migrations from `server/migrations/` every time it starts, so a fresh Neon database needs no manual setup.
 
 ## 🎨 Features in Detail
 
@@ -91,7 +116,7 @@ yarn dev
 ## 🏆 Hackathon Submission
 
 This project was created for the Appwrite Hackathon. Key highlights:
-- Integration with Appwrite Authentication services
+- Originally built on Appwrite auth; now runs on its own Node.js + PostgreSQL backend
 - Real-time multiplayer functionality
 - Modern web technologies
 - Engaging user experience

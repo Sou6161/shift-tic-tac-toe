@@ -1,11 +1,22 @@
   import React, { useState, useEffect } from "react";
   import io from "socket.io-client";
+  import { SOCKET_URL } from "../lib/api";
   // import GameEndPopup from "./GameEndPopup";
   import OpponentGameEndPopup from "./OpponentGameEndPopup";
   import { Copy, Check, ArrowLeft, ArrowRight } from "lucide-react";
   import Board, { Piece } from "./Board";
 
-  const socket = io("https://socketio-multiplayer-feature.onrender.com");
+  import { useAuthStore } from "../store/authStore";
+
+  // One shared connection. The auth callback runs on every (re)connect, so a
+  // signed-in player's token always reaches the server; signing in or out
+  // later is pushed with "authenticate". Guests can still play.
+  const socket = io(SOCKET_URL, {
+    auth: (cb) => cb({ token: useAuthStore.getState().token }),
+  });
+  useAuthStore.subscribe((state, prev) => {
+    if (state.token !== prev.token) socket.emit("authenticate", state.token);
+  });
 
   const TicTacToeShift = ({ isDark, onBack }) => {
     const [copied, setCopied] = useState(false);
@@ -24,16 +35,7 @@
     const [isMyTurn, setIsMyTurn] = useState(false);
     const [timerActive, setTimerActive] = useState(false);
     const [showPopup, setShowPopup] = useState(false);
-    const [playerData, setPlayerData] = useState({
-      totalMoves: 0,
-      wins: 0,
-      gamesPlayed: 0,
-    });
-
-    const [opponentData, setOpponentData] = useState({
-      wins: 0,
-      gamesPlayed: 0,
-    });
+    const [notice, setNotice] = useState("");
 
     const [myMoves, setMyMoves] = useState([]);
     const [opponentMoves, setOpponentMoves] = useState([]);
@@ -117,35 +119,48 @@
       socket.emit("createRoom", name);
     };
 
+    // Errors and notices from the server (wrong code, room full, host left…)
     useEffect(() => {
-      const board = localStorage.getItem("gameBoard");
-      const moves = localStorage.getItem("moves");
-      if (board) setBoard(JSON.parse(board));
-      if (moves) setMoves(JSON.parse(moves));
+      const onRoomError = (message) => setNotice(message);
+      const onRoomClosed = (message) => {
+        setNotice(message);
+        setGameState("initial");
+        setRoomCode("");
+        setOpponentName("");
+        setIsCreator(false);
+        setWinner(null);
+        setBoard(Array(9).fill(null));
+        setMoveCount(0);
+        setMyMoves([]);
+      };
+      const onStats = (user) => useAuthStore.getState().setUser(user);
+      const onConnectError = () => setNotice("Can't reach the game server. Retrying…");
+      const onConnect = () => setNotice((n) => (n.startsWith("Can't reach") ? "" : n));
+      socket.on("roomError", onRoomError);
+      socket.on("roomClosed", onRoomClosed);
+      socket.on("statsUpdated", onStats);
+      socket.on("connect_error", onConnectError);
+      socket.on("connect", onConnect);
+      return () => {
+        socket.off("roomError", onRoomError);
+        socket.off("roomClosed", onRoomClosed);
+        socket.off("statsUpdated", onStats);
+        socket.off("connect_error", onConnectError);
+        socket.off("connect", onConnect);
+      };
     }, []);
 
+    // Clear a notice after a few seconds
     useEffect(() => {
-      socket.on("gameUpdated", (data) => {
-        setGameState(data.gameState);
-        setBoard(data.board);
-        setCurrentPlayer(data.currentPlayer);
-        setMoveCount(data.moveCount);
-        setTimer(data.timer);
-        setPlayerMoves(data.playerMoves);
-        setMyMoveCount(data.moveCount);
-        setOpponentMoveCount(data.moveCount);
-        setShowPopup(false); // Hide OpponentGameEndPopup
-      });
-    }, []);
+      if (!notice || notice.startsWith("Can't reach")) return;
+      const t = setTimeout(() => setNotice(""), 4000);
+      return () => clearTimeout(t);
+    }, [notice]);
+
+    // Leaving the page section (Back) shouldn't leave a ghost player in a room.
+    useEffect(() => () => socket.emit("leaveRoom"), []);
 
     useEffect(() => {
-      socket.on("disconnect", () => {
-        console.log("Disconnected from server");
-        // Reconnect after a short delay
-        setTimeout(() => {
-          socket.io.reconnect();
-        }, 1000);
-      });
       socket.on("roomCreated", (code) => {
         setRoomCode(code);
         setGameState("waiting");
@@ -202,20 +217,7 @@
         } else {
           setMyMoveCount(data.moveCounts.O);
         }
-
-        // Update player score
-        if (data.winner === (isCreator ? "X" : "O")) {
-          setPlayerData((prevData) => ({
-            ...prevData,
-            wins: prevData.wins + 1,
-            gamesPlayed: prevData.gamesPlayed + 1,
-          }));
-        } else {
-          setPlayerData((prevData) => ({
-            ...prevData,
-            gamesPlayed: prevData.gamesPlayed + 1,
-          }));
-        }
+        // Stats are saved by the server and arrive via "statsUpdated".
       });
 
       socket.on("opponentLeft", () => {
@@ -319,30 +321,12 @@
         socket.off("turnChange");
         socket.off("rematchInitiated");
         socket.off("rematchAccepted");
-        socket.off("disconnect");
+        socket.off("opponentLeft");
+        socket.off("playerLeft");
+        socket.off("updateTimer");
+        socket.off("updateMoveCounts");
       };
     }, [isCreator, socket]);
-
-    useEffect(() => {
-      socket.on("rematch", () => {
-        // Reset game state
-        setGameState("playing");
-        setBoard(Array(9).fill(null));
-        setCurrentPlayer("X");
-        setWinner(null);
-        setMoveCount(0);
-        setTimer(20);
-        setIsMyTurn(isCreator);
-        setTimerActive(isCreator);
-        setSelectedCell(null);
-
-        // Reset moves data for both players
-        setMyMoves([]);
-        setOpponentMoves([]);
-        setMyMoveCount(0);
-        setOpponentMoveCount(0);
-      });
-    }, [isCreator, roomCode]);
 
     useEffect(() => {
       let interval;
@@ -473,6 +457,11 @@
 
     return (
       <div>
+        {notice && (
+          <div role="status" className="pop-in mx-auto mb-4 max-w-md rounded-2xl bg-xred/10 px-4 py-3 text-center text-[14px] font-medium text-xred">
+            {notice}
+          </div>
+        )}
         {gameState === "initial" && (
           <div className={panelCls}>
             {onBack && (
@@ -644,12 +633,12 @@
         {gameState === "playing" && winner !== null && (
           <OpponentGameEndPopup
             handleRematch={handleRematch}
-            playerData={playerData}
             opponentMoves={myMoves}
             isCreator={isCreator}
             isDark={isDark}
             winner={winner}
             myPiece={myPiece}
+            opponentName={opponentName}
             onBack={handleBack}
           />
         )}

@@ -149,7 +149,7 @@ const Header = () => {
           </div>
 
           <div className="ml-auto flex items-center gap-2">
-            <LoginButton handleLogin={() => {}} />
+            <LoginButton />
             <button
               onClick={() => setIsDark((d) => !d)}
               className="grid h-10 w-10 place-items-center rounded-full border border-line bg-card text-ink transition-transform hover:rotate-12 active:scale-95"

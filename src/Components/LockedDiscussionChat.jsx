@@ -1,240 +1,119 @@
 import React, { useState, useEffect, useRef } from "react";
-import {
-  ThumbsUp,
-  ThumbsDown,
-  CornerUpRight,
-  Lock,
-  Trash2,
-  ChevronDown,
-  ChevronUp,
-} from "lucide-react";
+import { ThumbsUp, ThumbsDown, CornerUpRight, Lock, Trash2, ChevronDown, ChevronUp } from "lucide-react";
 import { io } from "socket.io-client";
+import { SOCKET_URL } from "../lib/api";
+import { useAuthStore } from "../store/authStore";
 
 const LockedDiscussionChat = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const user = useAuthStore((s) => s.user);
+  const token = useAuthStore((s) => s.token);
+  const isAuthenticated = Boolean(user);
+  const userId = user?.id;
+  const username = user?.name || "";
+
   const [comments, setComments] = useState([]);
   const [showReply, setShowReply] = useState({});
   const [checked, setChecked] = useState(false);
   const [error, setError] = useState("");
-  const [newComment, setNewComment] = useState({
-    name: "",
-    email: "",
-    comment: "",
-  });
-  const [replyComment, setReplyComment] = useState({
-    name: "",
-    reply: "",
-    id: null,
-  });
-
-  const socket = useRef(null);
-  const [userId, setUserId] = useState(() => {
-    const savedUserId = localStorage.getItem("userId");
-    return savedUserId || "user-" + Math.random().toString(36).substr(2, 9);
-  });
-  const [username, setUsername] = useState("");
+  const [newComment, setNewComment] = useState({ comment: "" });
+  const [replyComment, setReplyComment] = useState({ reply: "", id: null });
   const [userLikes, setUserLikes] = useState(new Set());
   const [userDislikes, setUserDislikes] = useState(new Set());
   const [expandedReplies, setExpandedReplies] = useState({});
+  const socket = useRef(null);
 
   const INITIAL_REPLIES_SHOWN = 0;
 
-  useEffect(() => {
-    localStorage.setItem("userId", userId);
-  }, [userId]);
-
-  useEffect(() => {
-    const checkAuthStatus = () => {
-      const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
-      setIsAuthenticated(isLoggedIn);
-      
-      if (isLoggedIn) {
-        const storedUsername = localStorage.getItem("username");
-        if (storedUsername) {
-          setUsername(storedUsername);
-        }
-      }
-    };
-    
-    checkAuthStatus();
-    
-    // Add listener for auth state changes
-    const handleAuthChange = () => {
-      checkAuthStatus();
-    };
-    
-    window.addEventListener('authStateChanged', handleAuthChange);
-    window.addEventListener('storage', checkAuthStatus);
-    
-    return () => {
-      window.removeEventListener('authStateChanged', handleAuthChange);
-      window.removeEventListener('storage', checkAuthStatus);
-    };
-  }, []);
-
   const toggleRepliesExpansion = (commentId) => {
-    setExpandedReplies((prev) => ({
-      ...prev,
-      [commentId]: !prev[commentId],
-    }));
+    setExpandedReplies((prev) => ({ ...prev, [commentId]: !prev[commentId] }));
   };
 
   const getRepliestoShow = (replies, commentId) => {
     if (!replies) return [];
-    if (expandedReplies[commentId] || replies.length <= INITIAL_REPLIES_SHOWN) {
-      return replies;
-    }
+    if (expandedReplies[commentId] || replies.length <= INITIAL_REPLIES_SHOWN) return replies;
     return replies.slice(0, INITIAL_REPLIES_SHOWN);
   };
 
- 
-
+  // Connect only while signed in; the token identifies the author server-side.
   useEffect(() => {
-    if (isAuthenticated) {
-      socket.current = io("https://socketio-multiplayer-feature.onrender.com");
+    if (!isAuthenticated || !token) return;
+    const s = io(SOCKET_URL, { auth: { token } });
+    socket.current = s;
 
-      socket.current.emit("userJoined", {
-        userId,
-        username,
-      });
+    s.on("connect", () => s.emit("userJoined"));
+    s.on("chatHistory", (messages) => {
+      setComments(messages);
+      setUserLikes(new Set(messages.filter((m) => m.myVote === 1).map((m) => m.id)));
+      setUserDislikes(new Set(messages.filter((m) => m.myVote === -1).map((m) => m.id)));
+    });
+    s.on("newMessage", (message) => setComments((prev) => [...prev, message]));
+    s.on("messageUpdated", (updated) =>
+      setComments((prev) => prev.map((m) => (m.id === updated.id ? updated : m)))
+    );
+    s.on("messageDeleted", (id) => setComments((prev) => prev.filter((m) => m.id !== id)));
+    s.on("chatError", (message) => setError(message));
+    s.on("connect_error", () => setError("Can't reach the server. Retrying…"));
 
-      socket.current.on("chatHistory", (messages) => {
-        setComments(messages);
-      });
-
-      socket.current.on("newMessage", (message) => {
-        setComments((prev) => [...prev, message]);
-      });
-
-      socket.current.on("messageUpdated", (updatedMessage) => {
-        setComments((prev) =>
-          prev.map((msg) =>
-            msg.id === updatedMessage.id ? updatedMessage : msg
-          )
-        );
-      });
-
-      socket.current.on("messageDeleted", (messageId) => {
-        setComments((prev) => prev.filter((msg) => msg.id !== messageId));
-      });
-
-      return () => {
-        if (socket.current) {
-          socket.current.disconnect();
-        }
-      };
-    }
-  }, [isAuthenticated, userId, username]);
+    return () => {
+      s.disconnect();
+      socket.current = null;
+    };
+  }, [isAuthenticated, token]);
 
   const handleCommentSubmit = (e) => {
     e.preventDefault();
     if (!checked) {
-      setError("Please agree to the terms and conditions");
+      setError("Please agree to keep it friendly.");
       return;
     }
-
-    if (socket.current) {
-      socket.current.emit("sendMessage", {
-        userId,
-        username: newComment.name || username,
-        message: newComment.comment,
-      });
-    }
-
-    setNewComment({ name: "", email: "", comment: "" });
+    const message = newComment.comment.trim();
+    if (!message || !socket.current) return;
+    socket.current.emit("sendMessage", { message });
+    setNewComment({ comment: "" });
     setError("");
     setChecked(false);
   };
 
   const handleReplySubmit = (e, commentId) => {
     e.preventDefault();
-
-    if (!replyComment.name.trim()) {
-      setError("Please enter your name before replying");
-      return;
-    }
-
-    if (socket.current && replyComment.reply.trim()) {
-      socket.current.emit("sendReply", {
-        messageId: commentId,
-        userId,
-        username: replyComment.name,
-        reply: replyComment.reply,
-      });
-
-      setReplyComment({ name: "", reply: "", id: null });
-      setShowReply((prev) => ({ ...prev, [commentId]: false }));
-      setError("");
-    }
+    const reply = replyComment.reply.trim();
+    if (!reply || !socket.current) return;
+    socket.current.emit("sendReply", { messageId: commentId, reply });
+    setReplyComment({ reply: "", id: null });
+    setShowReply((prev) => ({ ...prev, [commentId]: false }));
+    setError("");
   };
 
   const handleDeleteComment = (messageId) => {
-    if (socket.current) {
-      socket.current.emit("deleteMessage", { messageId, userId });
-    }
+    socket.current?.emit("deleteMessage", { messageId });
   };
 
   const handleDeleteReply = (messageId, replyId) => {
-    if (socket.current) {
-      socket.current.emit("deleteReply", { messageId, replyId, userId });
-    }
+    socket.current?.emit("deleteReply", { messageId, replyId });
   };
 
-  const handleLike = (messageId) => {
-  if (socket.current) {
-    const isLiked = userLikes.has(messageId);
-    
-    if (isLiked) {
-      // Unlike
-      setUserLikes((prev) => {
-        const newSet = new Set(prev);
-        newSet.delete(messageId);
-        return newSet;
-      });
-      socket.current.emit("updateLikes", {
-        messageId,
-        action: "unlike",
-        userId,
-      });
-    } else {
-      // Like
-      setUserLikes((prev) => new Set(prev).add(messageId));
-      socket.current.emit("updateLikes", {
-        messageId,
-        action: "like",
-        userId,
-      });
-    }
-  }
-};
+  const without = (set, id) => {
+    const next = new Set(set);
+    next.delete(id);
+    return next;
+  };
 
-const handleDislike = (messageId) => {
-  if (socket.current) {
+  // A like and a dislike are mutually exclusive; the server switches the vote.
+  const handleLike = (messageId) => {
+    if (!socket.current) return;
+    const isLiked = userLikes.has(messageId);
+    setUserLikes((prev) => (isLiked ? without(prev, messageId) : new Set(prev).add(messageId)));
+    if (!isLiked) setUserDislikes((prev) => without(prev, messageId));
+    socket.current.emit("updateLikes", { messageId, action: isLiked ? "unlike" : "like" });
+  };
+
+  const handleDislike = (messageId) => {
+    if (!socket.current) return;
     const isDisliked = userDislikes.has(messageId);
-    
-    if (isDisliked) {
-      // Undislike
-      setUserDislikes((prev) => {
-        const newSet = new Set(prev);
-        newSet.delete(messageId);
-        return newSet;
-      });
-      socket.current.emit("updateLikes", {
-        messageId,
-        action: "undislike",
-        userId,
-      });
-    } else {
-      // Dislike
-      setUserDislikes((prev) => new Set(prev).add(messageId));
-      socket.current.emit("updateLikes", {
-        messageId,
-        action: "dislike",
-        userId,
-      });
-    }
-  }
-};
+    setUserDislikes((prev) => (isDisliked ? without(prev, messageId) : new Set(prev).add(messageId)));
+    if (!isDisliked) setUserLikes((prev) => without(prev, messageId));
+    socket.current.emit("updateLikes", { messageId, action: isDisliked ? "undislike" : "dislike" });
+  };
 
   const formatDate = (timestamp) => {
     const d = new Date(timestamp);
@@ -337,21 +216,13 @@ const handleDislike = (messageId) => {
 
                 {showReply[comment.id] && (
                   <form onSubmit={(e) => handleReplySubmit(e, comment.id)} className="mt-3 space-y-2">
-                    <input
-                      type="text"
-                      placeholder="Your name"
-                      aria-label="Your name"
-                      className="field py-2.5"
-                      value={replyComment.id === comment.id ? replyComment.name : ""}
-                      onChange={(e) => setReplyComment({ ...replyComment, name: e.target.value, id: comment.id })}
-                    />
                     <textarea
                       className="field resize-none py-2.5"
                       rows="2"
                       placeholder="Write a reply…"
                       aria-label="Reply"
                       value={replyComment.id === comment.id ? replyComment.reply : ""}
-                      onChange={(e) => setReplyComment({ ...replyComment, reply: e.target.value, id: comment.id })}
+                      onChange={(e) => setReplyComment({ reply: e.target.value, id: comment.id })}
                     />
                     {error && <p className="text-[13px] text-xred">{error}</p>}
                     <button type="submit" className="btn-ink !px-4 !py-2 text-[14px]">
@@ -411,24 +282,9 @@ const handleDislike = (messageId) => {
       </div>
 
       <form onSubmit={handleCommentSubmit} className="space-y-3 border-t border-line p-5 sm:p-6">
-        <div className="grid gap-3 sm:grid-cols-2">
-          <input
-            type="text"
-            placeholder={username ? `Name (default: ${username})` : "Name"}
-            aria-label="Name"
-            className="field"
-            value={newComment.name}
-            onChange={(e) => setNewComment({ ...newComment, name: e.target.value })}
-          />
-          <input
-            type="email"
-            placeholder="Email (not shown)"
-            aria-label="Email"
-            className="field"
-            value={newComment.email}
-            onChange={(e) => setNewComment({ ...newComment, email: e.target.value })}
-          />
-        </div>
+        <p className="flex items-center gap-2 text-[13px] text-muted">
+          <Avatar name={username} small /> Posting as <span className="font-semibold text-ink">{username}</span>
+        </p>
         <textarea
           placeholder="Say something to the table…"
           aria-label="Your post"

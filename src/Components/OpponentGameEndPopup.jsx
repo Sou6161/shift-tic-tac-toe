@@ -1,41 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { ArrowLeft, RotateCcw } from "lucide-react";
 import LoginButton from "./LoginButton";
+import { useAuthStore } from "../store/authStore";
 
-const OpponentGameEndPopup = ({
-  handleRematch,
-  playerData,
-  opponentMoves,
-  isCreator,
-  isDark,
-  winner,
-  myPiece,
-  onBack // New prop for handling back navigation
-}) => {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [showPopup, setShowPopup] = useState(true);
-  const [showLeaderboardConfirm, setShowLeaderboardConfirm] = useState(false);
-
-  const handleLogin = (isLoggedIn) => {
-    setIsLoggedIn(isLoggedIn);
-    if (isLoggedIn) {
-      setShowLeaderboardConfirm(true);
-    }
-  };
-
-  const handleLeaderboardConfirm = (confirmed) => {
-    if (confirmed) {
-      console.log("User confirmed joining leaderboard");
-    }
-    setShowLeaderboardConfirm(false);
-  };
-
-  useEffect(() => {
-    const storedLoginStatus = localStorage.getItem("isLoggedIn");
-    if (storedLoginStatus === "true") {
-      setIsLoggedIn(true);
-    }
-  }, []);
+const OpponentGameEndPopup = ({ handleRematch, opponentMoves, isCreator, winner, myPiece, opponentName, onBack }) => {
+  const user = useAuthStore((s) => s.user);
+  const isLoggedIn = Boolean(user);
+  const [, setShowPopup] = useState(true);
 
   const won = winner && winner === myPiece;
   const title =
@@ -45,7 +16,7 @@ const OpponentGameEndPopup = ({
       ? "Your opponent left."
       : won
       ? "You won it."
-      : `${winner} takes the round.`;
+      : `${opponentName || winner} takes the round.`;
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#1F1A14]/40 p-4 backdrop-blur-[2px] sm:items-center">
@@ -58,8 +29,11 @@ const OpponentGameEndPopup = ({
           {title}
         </h2>
         <p className="mt-2 text-[15px] text-muted">
-          You made {opponentMoves.length} {opponentMoves.length === 1 ? "move" : "moves"}. Record: {playerData.wins} wins from{" "}
-          {playerData.gamesPlayed} {playerData.gamesPlayed === 1 ? "game" : "games"}.
+          You made {opponentMoves.length} {opponentMoves.length === 1 ? "move" : "moves"}.
+          {user &&
+            ` Your record: ${user.stats.wins} ${user.stats.wins === 1 ? "win" : "wins"} from ${user.stats.gamesPlayed} ${
+              user.stats.gamesPlayed === 1 ? "game" : "games"
+            }.`}
         </p>
 
         {isCreator ? (
@@ -80,8 +54,8 @@ const OpponentGameEndPopup = ({
 
         {!isLoggedIn && (
           <div className="mt-5 flex items-center justify-between gap-3 border-t border-line pt-5">
-            <span className="text-[14px] text-muted">Sign in to keep your record.</span>
-            <LoginButton handleLogin={handleLogin} compact />
+            <span className="text-[14px] text-muted">Sign in so your next wins count.</span>
+            <LoginButton compact />
           </div>
         )}
 
