@@ -68,7 +68,7 @@ export const useAuthStore = create(
   )
 );
 
-// Clear out keys the old Appwrite version left behind.
+// Clear out localStorage keys left behind by the previous auth setup.
 try {
   ["isLoggedIn", "sessionId", "username", "userId", "gameBoard", "moves"].forEach((k) => localStorage.removeItem(k));
 } catch {

@@ -241,3 +241,5 @@ dist-ssr
 
 
 you have to store both players data in real time  which is their total moves in that game  , and their total game wins and total games played and  now i want to do when the game ends show a screen or pop up a screen in which the text is written that " to save your score"  then below this text  you show that login button which is in Header.jsx  file  and below this in center  show  "OR " text  and below  this "OR" text show a Rematch button on clicking this rematch mbutton the game restarts and all user data you have stored which  is his  total moves in previous game and total wins and total game played 
+.vercel
+.env*
