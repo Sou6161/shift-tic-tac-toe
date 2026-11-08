@@ -34,7 +34,6 @@ const LockedDiscussionChat = () => {
     return replies.slice(0, INITIAL_REPLIES_SHOWN);
   };
 
-  // Connect only while signed in; the token identifies the author server-side.
   useEffect(() => {
     if (!isAuthenticated || !token) return;
     const s = io(SOCKET_URL, { auth: { token } });

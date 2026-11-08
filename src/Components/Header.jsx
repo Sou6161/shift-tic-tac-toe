@@ -17,7 +17,6 @@ const readTheme = () => {
   }
 };
 
-/* Little logo mark: a tiny board with one piece mid-shift */
 const Mark = ({ className = "" }) => (
   <svg viewBox="0 0 32 32" className={className} aria-hidden="true">
     <rect x="1" y="1" width="30" height="30" rx="9" className="fill-ink" />
@@ -28,9 +27,7 @@ const Mark = ({ className = "" }) => (
   </svg>
 );
 
-/* Hero illustration: a mid-game board where one X slides into the centre */
 const DemoBoard = () => {
-  // positions on a 3x3: 0..8
   const pieces = { 1: "O", 2: "X", 3: "O", 5: "O", 6: "X" };
   return (
     <div className="relative mx-auto w-full max-w-[400px]">
@@ -102,7 +99,7 @@ const Header = () => {
     try {
       localStorage.setItem("theme", isDark ? "dark" : "light");
     } catch {
-      /* storage blocked: theme just won't persist */
+      // storage blocked: theme won't persist
     }
     const meta = document.querySelector('meta[name="theme-color"]');
     if (meta) meta.setAttribute("content", isDark ? "#14201B" : "#F4EEE2");
@@ -125,7 +122,6 @@ const Header = () => {
 
   return (
     <div className="min-h-screen overflow-x-clip">
-      {/* ------------------------------------------------ Nav */}
       <header className="sticky top-0 z-40 border-b border-line/70 bg-paper/85 backdrop-blur-md">
         <nav className="mx-auto flex h-16 max-w-6xl items-center gap-4 px-4 sm:px-6">
           <a href="#top" onClick={go("top")} className="flex items-center gap-2.5">
@@ -163,7 +159,6 @@ const Header = () => {
       </header>
 
       <main id="top">
-        {/* ------------------------------------------------ Hero */}
         <section className="mx-auto grid max-w-6xl items-center gap-14 px-4 pb-20 pt-14 sm:px-6 md:grid-cols-[1.1fr_1fr] md:pt-24">
           <div className="rise">
             <span className="chip">
@@ -194,7 +189,6 @@ const Header = () => {
           </div>
         </section>
 
-        {/* ------------------------------------------------ Play */}
         <section id="play" className="mx-auto max-w-6xl scroll-mt-20 px-4 pb-24 sm:px-6">
           <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
             <div>
@@ -212,7 +206,6 @@ const Header = () => {
           </div>
         </section>
 
-        {/* ------------------------------------------------ How */}
         <section id="how" className="scroll-mt-20 border-y border-line bg-sunk/50">
           <div className="mx-auto max-w-6xl px-4 py-24 sm:px-6">
             <p className="eyebrow">How it works</p>
@@ -249,7 +242,6 @@ const Header = () => {
           </div>
         </section>
 
-        {/* ------------------------------------------------ Discussion */}
         <section id="talk" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-24 sm:px-6">
           <div className="grid gap-10 md:grid-cols-[1fr_1.6fr]">
             <div>
@@ -265,7 +257,6 @@ const Header = () => {
           </div>
         </section>
 
-        {/* ------------------------------------------------ About */}
         <section id="about" className="scroll-mt-20 border-t border-line">
           <div className="mx-auto grid max-w-6xl gap-10 px-4 py-24 sm:px-6 md:grid-cols-[1fr_1.6fr]">
             <p className="eyebrow">Who made this</p>
@@ -274,7 +265,7 @@ const Header = () => {
                 Hi, I'm Sourabh, a frontend developer who likes building things people can play with. For Shift I
                 learned WebSockets from scratch so two people could play the same board in real time.
               </p>
-              <p className="font-display mt-6 text-[20px] italic text-muted">— Sourabh</p>
+              <p className="font-display mt-6 text-[20px] italic text-muted">Sourabh</p>
             </div>
           </div>
         </section>

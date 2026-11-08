@@ -25,7 +25,6 @@ const GameLauncher = ({ isDark }) => {
     setShowPlayNow(true);
   };
 
-  /* ---------- Step 1: choose who to play */
   const renderModes = () => (
     <div className="grid gap-4 md:grid-cols-2">
       <button
@@ -70,7 +69,6 @@ const GameLauncher = ({ isDark }) => {
     </div>
   );
 
-  /* ---------- Step 2 (vs computer): difficulty */
   const renderDifficultySelection = () => (
     <div className="mx-auto max-w-3xl py-6 text-center">
       <p className="eyebrow">Versus the computer</p>

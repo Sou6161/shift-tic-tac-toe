@@ -1,18 +1,7 @@
 import { query } from "../db.js";
 import { createLimiter } from "../rateLimit.js";
 
-/*
- * "Table talk": a discussion board for signed-in players, stored in Postgres.
- *
- * Client → server: userJoined, sendMessage({ message }), sendReply({ messageId, reply }),
- *                  deleteMessage({ messageId }), deleteReply({ messageId, replyId }),
- *                  updateLikes({ messageId, action: like|unlike|dislike|undislike })
- * Server → client: chatHistory(messages), newMessage(message),
- *                  messageUpdated(message), messageDeleted(id), chatError(text)
- *
- * The author is always the signed-in user on the socket; any userId or
- * username the client sends is ignored.
- */
+// The author is always the socket's signed-in user; ids and names sent by the client are ignored.
 
 const ROOM = "table-talk";
 const HISTORY_LIMIT = 100;
@@ -79,7 +68,6 @@ async function loadMessages({ viewerId, messageId = null }) {
   }));
 }
 
-/** Broadcast copy of a message: drop the per-viewer vote. */
 async function publicMessage(messageId) {
   const [message] = await loadMessages({ viewerId: null, messageId });
   if (!message) return null;
@@ -96,7 +84,6 @@ const id = (v) => {
 export function registerChatHandlers(io, socket) {
   const user = () => socket.data.user;
 
-  // Wraps a handler: requires sign-in and reports failures to the sender.
   const handle = (fn) => async (payload) => {
     if (!user()) return socket.emit("chatError", "Sign in to join the conversation.");
     try {

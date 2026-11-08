@@ -4,8 +4,7 @@ import { migrate } from "./migrate.js";
 import { createServer } from "./app.js";
 
 async function main() {
-  // Render's free plan has no pre-deploy step, so the schema is brought up to
-  // date on every start. Already-applied migrations are skipped.
+  // Render's free plan has no pre-deploy step, so migrations run on every start.
   await migrate();
 
   const { server, io } = createServer();

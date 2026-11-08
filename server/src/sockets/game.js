@@ -3,23 +3,10 @@ import { config } from "../config.js";
 import { applyMove, emptyBoard, findWinner, other } from "../game/rules.js";
 import { recordGame } from "../stats.js";
 
-/*
- * Online rooms. State lives in memory: a room only exists while its players
- * are connected, so nothing here needs to survive a restart. Finished games
- * are written to Postgres via recordGame().
- *
- * Client → server: createRoom(name), joinRoom({ name, room }), startGame(code),
- *                  move({ move }), rematch(), leaveRoom(), timeUp()
- * Server → client: roomCreated(code), roomJoined({ room, opponentName }),
- *                  opponentJoined(name), gameStarted, updateBoard(board),
- *                  updateMoveCounts({ X, O }), turnChange(player),
- *                  gameOver({ winner, moveCounts }), rematchAccepted({...}),
- *                  opponentLeft, roomClosed(reason), roomError(message),
- *                  statsUpdated(user)
- */
+// Rooms live in memory and only exist while players are connected; finished games go to Postgres.
 
 const CODE_ALPHABET = "abcdefghjkmnpqrstuvwxyz23456789";
-const rooms = new Map(); // code -> room
+const rooms = new Map();
 
 const newCode = () => {
   let code;
@@ -52,8 +39,7 @@ export function registerGameHandlers(io, socket) {
     if (r) r.turnTimer = null;
   };
 
-  // The server owns the clock. The browser shows a 20s countdown; we give
-  // one extra second of grace for latency, then pass the turn.
+  // The server owns the clock: 20s turns plus 1s grace for latency, then the turn passes.
   const startTurnTimer = (r) => {
     clearTurnTimer(r);
     r.turnTimer = setTimeout(() => {
@@ -160,7 +146,6 @@ export function registerGameHandlers(io, socket) {
     clearTurnTimer(r);
     io.to(r.code).emit("gameOver", { winner, moveCounts: r.moveCounts });
 
-    // Save the result for whoever is signed in.
     const seat = (p) => {
       const player = r.players[p];
       const s = player && io.sockets.sockets.get(player.socketId);
@@ -181,7 +166,7 @@ export function registerGameHandlers(io, socket) {
     }
   });
 
-  // Kept for older clients; the server's own turn timer is what counts.
+  // Ignored: the server's own turn timer is what counts.
   socket.on("timeUp", () => {});
 
   socket.on("rematch", () => {
@@ -202,5 +187,3 @@ export function registerGameHandlers(io, socket) {
   socket.on("disconnect", leaveCurrentRoom);
 }
 
-// exposed for tests
-export const _rooms = rooms;

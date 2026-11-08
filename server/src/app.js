@@ -30,7 +30,12 @@ export function createServer() {
   app.use(cors(corsOptions));
   app.use(express.json({ limit: "16kb" }));
 
-  app.get("/api/health", async (_req, res) => {
+  // No DB query: Render polls this every few seconds and keep-alive pings hit it, so touching Neon here would stop it ever suspending.
+  app.get("/api/health", (_req, res) => {
+    res.json({ ok: true });
+  });
+
+  app.get("/api/health/db", async (_req, res) => {
     try {
       await query("SELECT 1");
       res.json({ ok: true, db: "up" });
@@ -58,8 +63,7 @@ export function createServer() {
     maxHttpBufferSize: 32 * 1024,
   });
 
-  // Sockets may connect signed out (guests can play online). A token in the
-  // handshake, or sent later via "authenticate", attaches the account.
+  // Guests may connect signed out; a token in the handshake or via "authenticate" attaches the account.
   io.use(async (socket, next) => {
     try {
       socket.data.user = await userFromToken(socket.handshake.auth?.token);

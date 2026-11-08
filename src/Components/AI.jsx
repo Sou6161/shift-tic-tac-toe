@@ -2,12 +2,12 @@ const evaluateBoard = (board, depth) => {
   const winPatterns = [
     [0, 1, 2],
     [3, 4, 5],
-    [6, 7, 8], // Rows
+    [6, 7, 8],
     [0, 3, 6],
     [1, 4, 7],
-    [2, 5, 8], // Columns
+    [2, 5, 8],
     [0, 4, 8],
-    [2, 4, 6], // Diagonals
+    [2, 4, 6],
   ];
 
   for (let pattern of winPatterns) {
@@ -25,12 +25,10 @@ const getAvailableMoves = (board, player, isPlacementPhase, playerPieces) => {
   const moves = [];
 
   if (isPlacementPhase) {
-    // During placement phase, only empty cells are valid moves
     board.forEach((cell, index) => {
       if (!cell) moves.push({ from: null, to: index });
     });
   } else {
-    // During shifting phase, can move any of player's pieces to empty cells
     board.forEach((cell, fromIndex) => {
       if (cell === player) {
         board.forEach((targetCell, toIndex) => {

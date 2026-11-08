@@ -1,6 +1,4 @@
-# Render Blueprint for the Shift backend (API + socket.io).
-# The database lives on Neon; paste its connection string as DATABASE_URL
-# when Render asks for it.
+# Shift backend on Render. DATABASE_URL is the Neon connection string.
 services:
   - type: web
     name: shift-server

@@ -1,4 +1,4 @@
--- Accounts. Stats are kept as running totals so the profile is one row read.
+-- Stats are running totals so a profile is a single row read.
 CREATE TABLE users (
   id            SERIAL PRIMARY KEY,
   name          TEXT NOT NULL CHECK (char_length(name) BETWEEN 1 AND 40),
@@ -11,8 +11,7 @@ CREATE TABLE users (
 );
 CREATE UNIQUE INDEX users_email_lower_idx ON users (lower(email));
 
--- Login sessions. Only a SHA-256 of the token is stored, so a DB leak
--- doesn't hand out working tokens.
+-- Only a SHA-256 of each token is stored, so a DB leak exposes no working tokens.
 CREATE TABLE sessions (
   token_hash TEXT PRIMARY KEY,
   user_id    INTEGER NOT NULL REFERENCES users (id) ON DELETE CASCADE,
@@ -21,7 +20,6 @@ CREATE TABLE sessions (
 );
 CREATE INDEX sessions_user_idx ON sessions (user_id);
 
--- Every finished game, vs computer or online.
 CREATE TABLE games (
   id          SERIAL PRIMARY KEY,
   mode        TEXT NOT NULL CHECK (mode IN ('ai', 'online')),
@@ -37,7 +35,6 @@ CREATE TABLE games (
 CREATE INDEX games_x_user_idx ON games (x_user_id);
 CREATE INDEX games_o_user_idx ON games (o_user_id);
 
--- Table talk (discussion board)
 CREATE TABLE messages (
   id         SERIAL PRIMARY KEY,
   user_id    INTEGER NOT NULL REFERENCES users (id) ON DELETE CASCADE,

@@ -2,10 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ------------------------------------------------------------------
-   Theme tokens (RGB triplets so Tailwind can apply alpha)
-   Light: warm paper. Dark: green card-table felt.
-------------------------------------------------------------------- */
+/* Theme tokens as RGB triplets so Tailwind can apply alpha. Light: paper, dark: card-table felt. */
 :root {
   --paper: 244 238 226;
   --card: 251 248 241;
@@ -76,7 +73,6 @@
     font-variation-settings: "SOFT" 100, "opsz" 96;
   }
 
-  /* Primary button: ink pill with a printed offset shadow that presses in */
   .btn {
     @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-[15px] font-semibold
       transition-all duration-150 ease-out select-none disabled:opacity-40 disabled:pointer-events-none;
@@ -114,7 +110,6 @@
   }
 }
 
-/* ---------------- Pieces & motion ---------------- */
 
 .piece-draw path,
 .piece-draw circle {

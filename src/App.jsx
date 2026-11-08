@@ -5,7 +5,6 @@ import { useAuthStore } from "./store/authStore";
 const App = () => {
   const checkSession = useAuthStore((s) => s.checkSession);
 
-  // Restore a saved sign-in once on load.
   useEffect(() => {
     checkSession();
   }, [checkSession]);

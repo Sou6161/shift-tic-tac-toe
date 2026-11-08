@@ -2,13 +2,7 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { api, ApiError } from "../lib/api";
 
-/**
- * Who is signed in. Shared by the nav, the game screens, the end-of-game
- * popup and the discussion board. Only the token is saved to localStorage;
- * the user profile is re-fetched from the server on load.
- *
- * status: "idle" (not checked yet) | "checking" | "ready"
- */
+// Only the token is persisted; the profile is re-fetched from the server on load.
 export const useAuthStore = create(
   persist(
     (set, get) => ({
@@ -24,8 +18,7 @@ export const useAuthStore = create(
           const { user } = await api("/auth/me", { token });
           set({ user, status: "ready" });
         } catch (err) {
-          // Only drop the token if the server rejected it; keep it through
-          // network blips or a cold-starting server.
+          // Drop the token only on a 401, not on network blips or a cold-starting server.
           if (err instanceof ApiError && err.status === 401) set({ token: null, user: null });
           set({ status: "ready" });
         }
@@ -47,7 +40,6 @@ export const useAuthStore = create(
         if (token) await api("/auth/signout", { method: "POST", token }).catch(() => {});
       },
 
-      /** Replace the cached profile, e.g. after the server reports new stats. */
       setUser(user) {
         if (get().token) set({ user });
       },
@@ -72,5 +64,5 @@ export const useAuthStore = create(
 try {
   ["isLoggedIn", "sessionId", "username", "userId", "gameBoard", "moves"].forEach((k) => localStorage.removeItem(k));
 } catch {
-  /* storage unavailable */
+  // storage unavailable
 }

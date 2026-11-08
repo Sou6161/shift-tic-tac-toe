@@ -1,12 +1,9 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
-// In development the Node backend runs on :4000 (cd server && npm run dev).
-// Proxying it through Vite keeps everything same-origin, so no CORS setup is
-// needed locally. Production uses VITE_API_URL instead (see src/lib/api.js).
+// Dev proxies the backend on :4000 so everything is same-origin; production uses VITE_API_URL.
 const backend = process.env.BACKEND_URL || "http://localhost:4000";
 
-// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
   server: {

@@ -9,8 +9,7 @@ export const config = {
   isProd,
   port: Number(process.env.PORT || 4000),
   databaseUrl,
-  // Comma-separated list of sites allowed to call the API, e.g.
-  // https://shift-tic-tac-toe.vercel.app,http://localhost:5173
+  // Comma-separated, e.g. https://shift-tic-tac-toe.vercel.app,http://localhost:5173
   clientOrigins: (process.env.CLIENT_ORIGINS || "http://localhost:5173")
     .split(",")
     .map((o) => o.trim().replace(/\/$/, ""))

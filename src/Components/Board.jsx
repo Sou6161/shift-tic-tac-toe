@@ -1,7 +1,5 @@
 import React from "react";
 
-/* Hand-drawn-ish game pieces. Slight curve in the strokes keeps them from
-   looking like font glyphs. */
 export const XPiece = ({ className = "", animate = true }) => (
   <svg
     viewBox="0 0 100 100"
@@ -38,11 +36,6 @@ export const Piece = ({ value, className = "", animate = true }) =>
     <OPiece className={`text-oteal ${className}`} animate={animate} />
   ) : null;
 
-/**
- * Shared 3x3 board.
- * - selectedCell: index of the piece being shifted (lifted + ringed)
- * - showTargets: when a piece is selected, mark empty cells as destinations
- */
 const Board = ({ board, onCellClick, selectedCell = null, disabled = false, showTargets = false }) => {
   return (
     <div className="relative mx-auto w-full max-w-[340px] rounded-[28px] bg-sunk p-3 shadow-tile">

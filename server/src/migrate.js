@@ -5,11 +5,7 @@ import { pool, withTransaction } from "./db.js";
 
 const dir = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "migrations");
 
-/**
- * Applies any .sql files in /migrations that haven't run yet, in name order.
- * Each file runs in its own transaction. The transaction-scoped advisory lock
- * stops two instances migrating at once, and also works through Neon's pooler.
- */
+// Runs pending migrations in order. The advisory lock stops two instances migrating at once.
 export async function migrate({ log = console.log } = {}) {
   const files = (await fs.readdir(dir)).filter((f) => f.endsWith(".sql")).sort();
 

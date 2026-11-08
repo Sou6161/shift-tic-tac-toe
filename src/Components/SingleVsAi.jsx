@@ -19,7 +19,6 @@ const SingleVsAi = ({ difficulty, onBack, onReset }) => {
   const signedIn = useAuthStore((s) => Boolean(s.user));
   const recordAiGame = useAuthStore((s) => s.recordAiGame);
 
-  // Save the finished game to the player's record (once per round).
   useEffect(() => {
     if (!winner || recorded.current) return;
     recorded.current = true;
@@ -45,7 +44,6 @@ const SingleVsAi = ({ difficulty, onBack, onReset }) => {
   const makeAiMove = () => {
     const bestMove = getBestMove(board, "O", isPlacementPhase, moveCount);
 
-    // Implement mistake-making based on difficulty
     let finalMove = bestMove;
     if (shouldMakeMistake()) {
       finalMove = getRandomMove();
@@ -160,13 +158,10 @@ const SingleVsAi = ({ difficulty, onBack, onReset }) => {
         return;
       }
     }
-    // if (moveCount === 9) setWinner("draw");
   };
 
   const handleBackClick = () => {
-    // Call onBack to go back to game modes
     onBack();
-    // Optionally, call onReset to reset the difficulty selection
     if (onReset) {
       onReset();
     }

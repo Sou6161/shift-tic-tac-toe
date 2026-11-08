@@ -1,16 +1,13 @@
   import React, { useState, useEffect } from "react";
   import io from "socket.io-client";
   import { SOCKET_URL } from "../lib/api";
-  // import GameEndPopup from "./GameEndPopup";
   import OpponentGameEndPopup from "./OpponentGameEndPopup";
   import { Copy, Check, ArrowLeft, ArrowRight } from "lucide-react";
   import Board, { Piece } from "./Board";
 
   import { useAuthStore } from "../store/authStore";
 
-  // One shared connection. The auth callback runs on every (re)connect, so a
-  // signed-in player's token always reaches the server; signing in or out
-  // later is pushed with "authenticate". Guests can still play.
+  // Shared connection: the auth callback resends the token on every reconnect; sign-in changes go via "authenticate".
   const socket = io(SOCKET_URL, {
     auth: (cb) => cb({ token: useAuthStore.getState().token }),
   });
@@ -45,7 +42,6 @@
     const [showRoomControls, setShowRoomControls] = useState(false);
 
     const handleBack = () => {
-      // Reset necessary state
       setGameState("initial");
       setBoard(Array(9).fill(null));
       setWinner(null);
@@ -56,17 +52,14 @@
       setOpponentMoveCount(0);
       setShowPopup(false);
 
-      // Emit a leave room event if needed
       socket.emit("leaveRoom", roomCode);
 
-      // Reset room-related state
       setRoomCode("");
       setOpponentName("");
       setIsCreator(false);
     };
 
     const handleRematch = () => {
-      // Reset game state for creator
       setGameState("playing");
       setBoard(Array(9).fill(null));
       setCurrentPlayer("X");
@@ -82,7 +75,6 @@
       setOpponentMoveCount(0);
       setShowPopup(false);
 
-      // Emit rematch event to server
       socket.emit("rematch", { room: roomCode });
     };
 
@@ -95,15 +87,13 @@
 
     const handleLeaveRoom = () => {
       socket.emit("leaveRoom", roomCode);
-      // Reset all necessary state variables
       setRoomCode("");
       setOpponentName("");
       setGameState("initial");
       setShowPopup(false);
-      setShowRoomControls(false); // Reset room controls visibility
-      setName(""); // Clear the name input
-      setRoom(""); // Clear the room input
-      // Reset game-related states
+      setShowRoomControls(false);
+      setName("");
+      setRoom("");
       setBoard(Array(9).fill(null));
       setCurrentPlayer("X");
       setWinner(null);
@@ -119,7 +109,6 @@
       socket.emit("createRoom", name);
     };
 
-    // Errors and notices from the server (wrong code, room full, host left…)
     useEffect(() => {
       const onRoomError = (message) => setNotice(message);
       const onRoomClosed = (message) => {
@@ -150,7 +139,6 @@
       };
     }, []);
 
-    // Clear a notice after a few seconds
     useEffect(() => {
       if (!notice || notice.startsWith("Can't reach")) return;
       const t = setTimeout(() => setNotice(""), 4000);
@@ -227,21 +215,17 @@
         setTimeout(() => {
           setGameState("waiting");
           setShowPopup(false);
-        }, 5000); // Reset game state after 5 seconds
+        }, 5000);
       });
 
       socket.on("playerLeft", (name) => {
         if (gameState === "playing" || gameState === "waiting") {
-          // Update opponent's name to empty string
           setOpponentName("");
 
-          // Update game state to 'waiting'
           setGameState("waiting");
 
-          // Show a message indicating the player has left
           alert(`${name} has left the game`);
 
-          // Optionally, reset the board and move count
           setBoard(Array(9).fill(null));
           setMoveCount(0);
         }
@@ -275,14 +259,13 @@
       });
 
       socket.on("rematchInitiated", () => {
-        // Reset game state for opponent
         setGameState("playing");
         setBoard(Array(9).fill(null));
         setCurrentPlayer("X");
         setWinner(null);
         setMoveCount(0);
         setTimer(20);
-        setIsMyTurn(!isCreator); // Opponent's turn will be opposite of creator's
+        setIsMyTurn(!isCreator);
         setTimerActive(!isCreator);
         setSelectedCell(null);
         setMyMoves([]);
@@ -293,14 +276,13 @@
       });
 
       socket.on("rematchAccepted", (data) => {
-        // Reset game state for ALL players
         setGameState("playing");
         setBoard(data.board);
         setCurrentPlayer(data.currentPlayer);
         setWinner(null);
         setMoveCount(data.moveCount);
         setTimer(data.timer);
-        setIsMyTurn(isCreator); // Creator (X) starts first
+        setIsMyTurn(isCreator);
         setTimerActive(isCreator);
         setSelectedCell(null);
         setMyMoves([]);
@@ -369,7 +351,6 @@
           const newBoard = [...board];
           newBoard[index] = currentPlayer;
 
-          // Only track my move
           const timestamp = Date.now();
           const moveData = {
             move: [index],
@@ -397,7 +378,6 @@
             newBoard[index] = newBoard[selectedCell];
             newBoard[selectedCell] = null;
 
-            // Only track my move
             const timestamp = Date.now();
             const moveData = {
               move: [selectedCell, index],

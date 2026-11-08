@@ -1,9 +1,7 @@
 import pg from "pg";
 import { config } from "./config.js";
 
-// Neon requires TLS. Its connection strings carry sslmode=require; local dev
-// databases don't. We read the flag ourselves and strip it from the URL so pg
-// doesn't print its sslmode deprecation warning.
+// Neon needs TLS. sslmode is read here and stripped from the URL so pg doesn't warn about it.
 const url = new URL(config.databaseUrl);
 const sslmode = url.searchParams.get("sslmode");
 url.searchParams.delete("sslmode");

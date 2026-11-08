@@ -5,16 +5,10 @@ import { limitRequests } from "../rateLimit.js";
 
 const router = Router();
 
-// A game vs the computer can't finish in under ~10 seconds (the AI waits 2s
-// per move), so one result per 8 seconds per user is generous.
+// An AI game takes at least ~10s (the AI waits 2s per move), so one result per 8s is generous.
 const resultLimit = limitRequests({ windowMs: 8000, max: 1 }, (req) => `ai:${req.user.id}`);
 
-/**
- * POST /api/games/ai  { winner: "X" | "O", moves, difficulty }
- * The player is always X against the computer. Results are reported by the
- * browser (the AI runs there), so this is trusted the way any client-side
- * single-player score is.
- */
+// Results come from the browser (the AI runs there), so they're trusted like any client-side score.
 router.post("/ai", requireUser, resultLimit, async (req, res, next) => {
   try {
     const { winner, moves, difficulty } = req.body || {};

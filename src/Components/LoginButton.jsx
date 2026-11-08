@@ -1,7 +1,27 @@
 import React, { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { X as Close, LogOut } from "lucide-react";
+import { X as Close, LogOut, Eye, EyeOff } from "lucide-react";
 import { useAuthStore } from "../store/authStore";
+
+// Defined outside LoginButton so it isn't recreated per keystroke, which would drop focus.
+const PasswordField = ({ label, ...props }) => {
+  const [visible, setVisible] = useState(false);
+  return (
+    <div className="relative">
+      <input {...props} type={visible ? "text" : "password"} aria-label={label} className="field pr-12" />
+      <button
+        type="button"
+        onClick={() => setVisible((v) => !v)}
+        className="absolute right-2 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-full text-muted transition-colors hover:bg-ink/5 hover:text-ink"
+        aria-label={visible ? `Hide ${label.toLowerCase()}` : `Show ${label.toLowerCase()}`}
+        aria-pressed={visible}
+        title={visible ? "Hide password" : "Show password"}
+      >
+        {visible ? <EyeOff className="h-[18px] w-[18px]" /> : <Eye className="h-[18px] w-[18px]" />}
+      </button>
+    </div>
+  );
+};
 
 const LoginButton = ({ onLoginSuccess, compact = false }) => {
   const user = useAuthStore((s) => s.user);
@@ -158,25 +178,27 @@ const LoginButton = ({ onLoginSuccess, compact = false }) => {
                 onChange={(e) => setEmail(e.target.value)}
                 required
               />
-              <input
-                type="password"
-                className="field"
+              <PasswordField
+                label="Password"
                 placeholder={signInView ? "Password" : "Password (8+ characters)"}
-                aria-label="Password"
                 autoComplete={signInView ? "current-password" : "new-password"}
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  setError(null);
+                }}
                 required
               />
               {!signInView && (
-                <input
-                  type="password"
-                  className="field"
+                <PasswordField
+                  label="Confirm password"
                   placeholder="Password, once more"
-                  aria-label="Confirm password"
                   autoComplete="new-password"
                   value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  onChange={(e) => {
+                    setConfirmPassword(e.target.value);
+                    setError(null);
+                  }}
                   required
                 />
               )}

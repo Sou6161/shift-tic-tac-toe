@@ -1,8 +1,4 @@
-// Pure game rules for Tic-Tac-Toe Shift. No I/O, so they're easy to test.
-//
-// Placement phase: the first 6 moves (3 per player) put a piece on an empty cell.
-// Shifting phase: after that, a move picks up one of your own pieces and drops
-// it on any empty cell. Three in a row wins at any point.
+// Placement: the first 6 moves put a piece down. Shifting: each move then slides one of your pieces to an empty cell.
 
 export const PLACEMENT_MOVES = 6;
 
@@ -30,10 +26,7 @@ export function findWinner(board) {
 
 const isCell = (n) => Number.isInteger(n) && n >= 0 && n <= 8;
 
-/**
- * Validates and applies a move. `move` is [to] while placing, [from, to] while shifting.
- * Returns { board } on success or { error } with a player-facing reason.
- */
+// move is [to] while placing and [from, to] while shifting. Returns { board } or { error }.
 export function applyMove(board, player, moveCount, move) {
   if (!Array.isArray(move)) return { error: "Invalid move." };
   const placing = moveCount < PLACEMENT_MOVES;

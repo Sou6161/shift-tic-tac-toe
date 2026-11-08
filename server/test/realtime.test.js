@@ -1,5 +1,4 @@
-// End-to-end tests over real HTTP + sockets against a throwaway database.
-// Uses TEST_DATABASE_URL, defaulting to a local shift_test database.
+// Wipes and rebuilds TEST_DATABASE_URL (default: local shift_test) before running.
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 
@@ -59,8 +58,8 @@ test("online game: rooms, turn order, illegal moves, win, stats saved", async ()
   const host = await api("/api/auth/signup", { name: "Host", email: "host@test.dev", password: "password1" });
   assert.equal(host.status, 201);
 
-  const x = open(host.body.token); // signed in
-  const o = open(); // guest
+  const x = open(host.body.token);
+  const o = open();
 
   x.emit("createRoom", "Host");
   const code = await once(x, "roomCreated");
@@ -75,13 +74,11 @@ test("online game: rooms, turn order, illegal moves, win, stats saved", async ()
   assert.deepEqual(await joined, { room: code, opponentName: "Host" });
   assert.equal(await arrived, "Guest");
 
-  // only the host can start
   o.emit("startGame", code);
   const started = Promise.all([once(x, "gameStarted"), once(o, "gameStarted")]);
   x.emit("startGame", code);
   await started;
 
-  // O can't move first
   o.emit("move", { room: code, move: [0] });
   assert.match(await once(o, "roomError"), /not your turn/);
 
@@ -91,7 +88,6 @@ test("online game: rooms, turn order, illegal moves, win, stats saved", async ()
     return (await done)[0];
   };
 
-  // placement: X 0, O 3, X 1, O 4, X 5, O 8
   await play(x, [0]);
   await play(o, [3]);
   await play(x, [1]);
@@ -100,11 +96,9 @@ test("online game: rooms, turn order, illegal moves, win, stats saved", async ()
   const afterPlacement = await play(o, [8]);
   assert.deepEqual(afterPlacement, ["X", "X", null, "O", "O", "X", null, null, "O"]);
 
-  // shifting: placement-style move is rejected now
   x.emit("move", { room: code, move: [2] });
   assert.match(await once(x, "roomError"), /Pick up a piece/);
 
-  // X shifts 5 -> 2 to complete the top row
   const over = Promise.all([once(x, "gameOver"), once(o, "gameOver")]);
   const stats = once(x, "statsUpdated");
   x.emit("move", { room: code, move: [5, 2] });
@@ -118,13 +112,11 @@ test("online game: rooms, turn order, illegal moves, win, stats saved", async ()
   const { rows } = await pool.query("SELECT mode, winner, x_name, o_name, o_user_id FROM games");
   assert.deepEqual(rows, [{ mode: "online", winner: "X", x_name: "Host", o_name: "Guest", o_user_id: null }]);
 
-  // rematch resets the board for both
   const rematch = Promise.all([once(x, "rematchAccepted"), once(o, "rematchAccepted")]);
   x.emit("rematch", { room: code });
   const [r] = await rematch;
   assert.deepEqual(r.board, Array(9).fill(null));
 
-  // guest leaves: host is told and keeps the room
   const left = once(x, "opponentLeft");
   o.emit("leaveRoom", code);
   await left;
@@ -178,13 +170,11 @@ test("table talk: sign-in required, posts, votes, replies, delete own only", asy
   const withReply = await upd;
   assert.equal(withReply.replies[0].username, "Ben");
 
-  // Ben can't delete Ana's message
   sb.emit("deleteMessage", { messageId: msg.id });
   await new Promise((r) => setTimeout(r, 200));
   const { rowCount } = await pool.query("SELECT 1 FROM messages WHERE id = $1", [msg.id]);
   assert.equal(rowCount, 1);
 
-  // history shows Ben's own vote
   const late = open(b.body.token);
   late.emit("userJoined", {});
   const [h] = await once(late, "chatHistory");
@@ -223,4 +213,9 @@ test("running out of time passes the turn", async () => {
   } finally {
     config.turnSeconds = saved;
   }
+});
+
+test("health check skips the database; /api/health/db checks it", async () => {
+  assert.deepEqual((await api("/api/health")).body, { ok: true });
+  assert.deepEqual((await api("/api/health/db")).body, { ok: true, db: "up" });
 });

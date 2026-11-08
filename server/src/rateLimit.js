@@ -1,7 +1,4 @@
-/**
- * Small in-memory fixed-window limiter. Fine for a single Render instance;
- * swap for a shared store if the service is ever scaled out.
- */
+// In-memory fixed-window limiter. Fine for one instance; needs a shared store if scaled out.
 export function createLimiter({ windowMs, max }) {
   const hits = new Map();
 
@@ -11,7 +8,6 @@ export function createLimiter({ windowMs, max }) {
   }, windowMs);
   timer.unref();
 
-  /** Returns true if this hit is allowed. */
   return function allow(key) {
     const now = Date.now();
     const entry = hits.get(key);
@@ -24,7 +20,6 @@ export function createLimiter({ windowMs, max }) {
   };
 }
 
-/** Express middleware wrapper. */
 export function limitRequests(options, keyFn = (req) => req.ip) {
   const allow = createLimiter(options);
   return (req, res, next) => {

@@ -1,11 +1,7 @@
 import { withTransaction } from "./db.js";
 import { getUserById } from "./auth.js";
 
-/**
- * Saves a finished game and bumps each signed-in player's running totals.
- * players: { X: { userId, name, moves }, O: { userId, name, moves } }
- * Returns the updated public user for every signed-in player, keyed by piece.
- */
+// Saves a finished game and updates each signed-in player's totals. Returns updated users by piece.
 export async function recordGame({ mode, difficulty = null, players, winner, moveCount }) {
   await withTransaction(async (db) => {
     await db.query(

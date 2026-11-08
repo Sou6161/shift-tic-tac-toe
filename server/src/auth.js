@@ -6,8 +6,7 @@ import { config } from "./config.js";
 const scrypt = promisify(crypto.scrypt);
 const KEYLEN = 64;
 
-// Stored as scrypt$<salt hex>$<hash hex>. scrypt is built into Node, so there
-// is no native bcrypt module to compile on Render.
+// Format: scrypt$<salt hex>$<hash hex>. Built-in scrypt means no native bcrypt build on Render.
 export async function hashPassword(password) {
   const salt = crypto.randomBytes(16);
   const hash = await scrypt(password, salt, KEYLEN);
@@ -72,7 +71,6 @@ export function bearerToken(req) {
   return match ? match[1].trim() : null;
 }
 
-/** Express middleware: sets req.user (or null) from the Authorization header. */
 export async function loadUser(req, _res, next) {
   try {
     req.token = bearerToken(req);
